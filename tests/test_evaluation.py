@@ -16,8 +16,6 @@ from loraflow.config import AppConfig, DataConfig, EvaluationConfig, TrainingCon
 from loraflow.data import format_record  # noqa: E402
 from loraflow.evaluation import (  # noqa: E402
     IGNORE_INDEX,
-    _answer_labels,
-    _build_scoring_row,
     _free_memory,
     _note_text,
     evaluate_config,
@@ -35,18 +33,6 @@ def make_config(tmp_path: Path) -> AppConfig:
         training=TrainingConfig(base_model="fake/model", output_dir=tmp_path / "run"),
         evaluation=EvaluationConfig(output_file=tmp_path / "report.json"),
     )
-
-
-def test_scoring_row_rejects_truncated_completion() -> None:
-    with pytest.raises(ValueError, match="exceeding max_seq_length=5"):
-        _build_scoring_row([1, 2, 3], [4, 5, 6], max_length=5, source_line=17)
-
-
-def test_scoring_row_preserves_full_completion() -> None:
-    input_ids, labels = _build_scoring_row([1, 2], [3, 4], max_length=4, source_line=1)
-
-    assert input_ids == [1, 2, 3, 4]
-    assert labels == [IGNORE_INDEX, IGNORE_INDEX, 3, 4]
 
 
 def test_prompt_completion_row_uses_trl_common_prefix_mask() -> None:
@@ -73,29 +59,6 @@ def test_prompt_completion_row_rejects_full_sequence_truncation() -> None:
             max_length=4,
             source_line=3,
         )
-
-
-def test_answer_labels_masks_everything_before_the_completion() -> None:
-    prompt_ids = [1, 2, 3, 4]
-    completion_ids = [5, 6]
-    input_ids = prompt_ids + completion_ids
-
-    labels = _answer_labels(prompt_ids, completion_ids, input_ids)
-
-    assert labels == [IGNORE_INDEX, IGNORE_INDEX, IGNORE_INDEX, IGNORE_INDEX, 5, 6]
-
-
-def test_answer_labels_respects_truncation() -> None:
-    # input_ids were cut to max_length, so the completion no longer fits.
-    labels = _answer_labels([1, 2, 3, 4, 5], [6, 7], [1, 2, 3, 4, 5])
-
-    assert labels == [IGNORE_INDEX] * 5
-
-
-def test_answer_labels_keeps_only_the_first_completion_token_when_truncated() -> None:
-    labels = _answer_labels([1, 2], [3, 4, 5], [1, 2, 3])
-
-    assert labels == [IGNORE_INDEX, IGNORE_INDEX, 3]
 
 
 def test_note_text_recovers_the_input_block() -> None:
