@@ -40,7 +40,7 @@ bash scripts/run_v4_experiments.sh
 
 The driver does not regenerate or modify datasets. It reuses a complete adapter already present (including the completed Track A adapter), trains only missing tracks, evaluates A/B/C one at a time, saves per-stage logs under `artifacts/v4-logs/`, and writes `artifacts/v4-summary.md`. It stops on the first error so incomplete results are not presented as a completed comparison.
 
-The generator checks exact concept coverage, split concept allocation, exact severity quotas, valid target shape, severity-to-action policy, cue separation, and cross-split input uniqueness before writing each manifest. Each JSONL file is SHA-256 hashed.
+The generator checks exact concept coverage, concept-to-category label consistency, split concept allocation, exact severity quotas, valid target shape, severity-to-action policy, cue separation, and cross-split input uniqueness before writing each manifest. Each JSONL file is SHA-256 hashed.
 
 ## Controlled experiment protocol
 
