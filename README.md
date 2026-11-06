@@ -4,6 +4,31 @@ An independently implemented, modular pipeline for preparing datasets, fine-tuni
 
 > **Status:** The pipeline runs end to end and has been verified on an Apple M4 (16 GB) with MPS and CPU. Training, evaluation, tracking, export, and serving each completed real runs whose numbers are recorded below and on disk. It is **not** production-ready: the task is a small synthetic corpus, the model is a 0.5B toy, and single-host only.
 
+## Architecture
+
+LoRAFlow separates offline experimentation from online inference. Dataset validation feeds the training stage; the resulting adapter is evaluated against the same held-out split, exported with reload verification, and then loaded by a FastAPI service. MLflow records experiment parameters, metrics, and artifacts without sitting in the request path.
+
+```mermaid
+flowchart TD
+    CLI["CLI + validated config"] --> DATA["JSONL validation / split audit"]
+    DATA --> TRAIN["SFT training: Transformers + TRL"]
+    TRAIN --> PEFT["PEFT LoRA adapter + checkpoints"]
+    PEFT --> EVAL["Held-out evaluation + train-only baseline"]
+    PEFT --> EXPORT["Adapter export + reload verification"]
+    EXPORT --> ART["Verified adapter artifact"]
+    ART --> API["FastAPI inference service"]
+    API --> CLIENT["HTTP client"]
+    TRAIN --> MLFLOW["MLflow experiment tracking"]
+    EVAL --> MLFLOW
+    EXPORT --> MLFLOW
+    CI["GitHub Actions"] --> TESTS["Lint + Python 3.10 / 3.13 tests"]
+    CI --> SMOKE["CPU train → evaluate → export → API smoke"]
+```
+
+**Key boundaries:** training and evaluation are offline commands; serving loads an existing adapter and does not train or silently fall back. Export verifies reload integrity. CI exercises a small CPU path and validates Compose configuration; it does not build an image or deploy the service. The detailed component map and lifecycle are in [Architecture](docs/architecture.md).
+
+---
+
 ## Historical v1 measurements — not generalization evidence
 
 **Dataset audit disclosure:** the original v1 synthetic corpus used label-correlated phrase templates. Its audit found 65–71% template overlap in held-out splits and an 82.5–85% 1-nearest-neighbour exact-match baseline. The model measurements below are retained as historical pipeline/reproducibility evidence only; they must not be presented as proof of task generalization. The v2 audit exposed a closed-vocabulary shortcut: the same symptom concepts appeared in every split. The v3 generator now holds out symptom concepts by category (three concepts per category for training, one for validation, and one for test), while severity is derived from independent systemic, functional, and trajectory attributes. The audit checks concept disjointness, category consistency, action-policy consistency, and nearest-neighbour plus per-field majority baselines. The v3 corpus has now been generated and passed the manifest-enforced local audit: 480/120/120 records, disjoint symptom concepts, no exact-note or template overlap, and all category/severity/action policy checks passed. The held-out non-neural baselines remain weak and mixed by field; this is a small synthetic concept-holdout benchmark, not evidence of broad language generalization. No v3 model-quality result is claimed until a fresh model run is evaluated against these baselines.
@@ -49,7 +74,7 @@ V4 is a separate, controlled synthetic benchmark under `data/v4/`; it does not o
 
 The generator uses deterministic seeds, eight concepts per category, exact severity quotas, split manifests and SHA-256 hashes. It removes random animal IDs and runs allocation, uniqueness, token-length and policy checks before writing. The TF-IDF + LinearSVC baseline is fit on training text only; it does not fit on test examples. Its action field is derived from predicted severity using the benchmark's deterministic policy, so action is not an independent classification result.
 
-The experiment uses `Qwen/Qwen2.5-0.5B` with standard LoRA (rank 8, alpha 16, dropout 0.05, `q_proj` and `v_proj`). Each adapter has 540,672 trainable parameters (about 0.109% of 494,573,440 base parameters). Three training and evaluation runs completed locally; all three adapters were exported and reload-verified. The Track A adapter was also loaded into the FastAPI service on Apple MPS and exercised through `/health` and `/generate`. This does not mean all three adapters have been live-served; the live API check was performed with Track A.
+The experiment uses `Qwen/Qwen2.5-0.5B` with standard LoRA (rank 8, alpha 16, dropout 0.05, `q_proj` and `v_proj`). Each adapter has 540,672 trainable parameters (about 0.109% of 494,573,440 base parameters). Three training and evaluation runs completed locally; all three adapters were exported and reload-verified. All three Prompt-v2 adapters were loaded sequentially into the FastAPI service on Apple MPS and exercised through `/health` and `/generate`; each returned a schema-valid completion with `adapter_applied: true`. This verifies the tested local serving path, not a production deployment.
 
 ### Prompt-v2 held-out results
 
