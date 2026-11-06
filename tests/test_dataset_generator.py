@@ -103,13 +103,16 @@ def test_manifest_audit_enforces_concept_and_label_contract(tmp_path: Path) -> N
         "severity_cues_by_split": {
             split: {
                 "systemic": {
-                    state: list(phrases) for state, phrases in _GENERATOR["SYSTEMIC_TEXT"][split].items()
+                    state: list(phrases)
+                    for state, phrases in _GENERATOR["SYSTEMIC_TEXT"][split].items()
                 },
                 "function": {
-                    state: list(phrases) for state, phrases in _GENERATOR["FUNCTION_TEXT"][split].items()
+                    state: list(phrases)
+                    for state, phrases in _GENERATOR["FUNCTION_TEXT"][split].items()
                 },
                 "trajectory": {
-                    state: list(phrases) for state, phrases in _GENERATOR["TRAJECTORY_TEXT"][split].items()
+                    state: list(phrases)
+                    for state, phrases in _GENERATOR["TRAJECTORY_TEXT"][split].items()
                 },
             }
             for split in symptoms_by_split
