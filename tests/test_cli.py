@@ -168,3 +168,15 @@ def test_export_parser_requires_explicit_overwrite_flag() -> None:
 
     assert safe.overwrite is False
     assert replace.overwrite is True
+
+
+
+def test_existing_export_destination_is_a_clean_cli_error(monkeypatch) -> None:
+    from loraflow import cli
+
+    def reject_existing_destination(_args):
+        raise FileExistsError("Export destination already exists")
+
+    monkeypatch.setattr(cli, "command_export", reject_existing_destination)
+
+    assert main(["export"]) == 2
