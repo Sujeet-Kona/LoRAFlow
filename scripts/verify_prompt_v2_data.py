@@ -70,7 +70,10 @@ def verify_track(track: str) -> dict[str, int]:
                     f"{path}:{line_number}: expected object with "
                     f"{sorted(required)} fields"
                 )
-            if not all(isinstance(record[key], str) and record[key].strip() for key in required):
+            if not all(
+                isinstance(record[key], str) and record[key].strip()
+                for key in required
+            ):
                 raise ValueError(
                     f"{path}:{line_number}: instruction, input, and output "
                     "must be non-empty strings"
