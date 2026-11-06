@@ -20,7 +20,13 @@ from transformers import AutoModelForCausalLM
 
 from loraflow.config import AppConfig, config_sha256
 from loraflow.data import Example, dataset_report, file_identity, load_examples
-from loraflow.metrics import field_scores, format_delta, perplexity_from_loss, score_generations
+from loraflow.metrics import (
+    classification_scores,
+    format_delta,
+    perplexity_from_loss,
+    score_generations,
+    structured_output_scores,
+)
 from loraflow.runtime import (
     cpu_threads,
     read_json,
@@ -288,7 +294,8 @@ def _score_variant(
         )
         golds = [example.completion for example in gen_examples]
         block.update(score_generations(predictions, golds).to_dict())
-        block["per_field"] = field_scores(predictions, golds)
+        block["per_field"] = classification_scores(predictions, golds)
+        block["structured_output"] = structured_output_scores(predictions)
         block["predictions"] = predictions
     else:
         block["generation_examples"] = 0
