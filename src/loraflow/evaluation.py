@@ -71,6 +71,14 @@ def _build_scoring_row(
     return input_ids, _answer_labels(prompt_ids, completion_ids, input_ids)
 
 
+def _completion_with_eos(completion_ids: list[int], eos_token_id: int | None) -> list[int]:
+    """Match TRL SFT preprocessing by scoring the completion terminator too."""
+
+    if eos_token_id is None or (completion_ids and completion_ids[-1] == eos_token_id):
+        return completion_ids
+    return [*completion_ids, eos_token_id]
+
+
 def _answer_labels(
     prompt_ids: list[int], completion_ids: list[int], input_ids: list[int]
 ) -> list[int]:
@@ -96,8 +104,12 @@ def score_teacher_forcing(
     *,
     max_length: int,
     batch_size: int,
+    eos_token_id: int | None = None,
 ) -> dict[str, Any]:
-    """Answer-token loss, perplexity and next-token accuracy under teacher forcing."""
+    """Answer-token loss, perplexity and next-token accuracy under teacher forcing.
+
+    EOS is included because TRL appends it to prompt-completion training targets.
+    """
 
     model.eval()
     pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0
@@ -115,6 +127,7 @@ def score_teacher_forcing(
 
         rows = []
         for example, prompt, completion in zip(batch, prompts, completions, strict=True):
+            completion = _completion_with_eos(completion, eos_token_id)
             rows.append(
                 _build_scoring_row(
                     prompt,
@@ -258,6 +271,7 @@ def _score_variant(
         held_out,
         max_length=config.data.max_seq_length,
         batch_size=config.evaluation.batch_size,
+        eos_token_id=tokenizer.eos_token_id,
     )
     model.eval()
     model.config.use_cache = True
