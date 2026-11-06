@@ -232,3 +232,13 @@ def test_default_template_matches_config_default() -> None:
     from loraflow.config import DataConfig
 
     assert DataConfig(train_file="x.jsonl").prompt_template == DEFAULT_PROMPT_TEMPLATE
+
+
+def test_split_examples_rejects_validation_count_that_leaves_no_train_data() -> None:
+    with pytest.raises(ValueError, match="at least 1 training examples must remain"):
+        split_examples(make_examples(5), validation_size=5, seed=0)
+
+
+def test_split_examples_rejects_invalid_minimum_train() -> None:
+    with pytest.raises(ValueError, match="minimum_train must be at least one"):
+        split_examples(make_examples(5), validation_size=1, seed=0, minimum_train=0)
