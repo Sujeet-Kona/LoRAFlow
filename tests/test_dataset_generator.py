@@ -10,6 +10,7 @@ _GENERATOR = runpy.run_path(
 )
 make_records = _GENERATOR["make_records"]
 derive_severity = _GENERATOR["derive_severity"]
+symptoms_by_split = _GENERATOR["SYMPTOMS_BY_SPLIT"]
 
 
 def test_generated_partitions_are_exact_note_disjoint() -> None:
@@ -46,16 +47,41 @@ def test_severity_is_derived_from_scenario_attributes(
     assert derive_severity(systemic, function, trajectory) == expected
 
 
-def test_split_families_use_distinct_surface_frames() -> None:
-    train = make_records(30, seed=21, split="train")
-    validation = make_records(30, seed=22, split="validation")
-    test = make_records(30, seed=23, split="test")
+def test_symptom_concepts_are_disjoint_across_splits() -> None:
+    train = make_records(120, seed=21, split="train")
+    validation = make_records(60, seed=22, split="validation")
+    test = make_records(60, seed=23, split="test")
 
-    # The opening record frame is intentionally split-specific.
-    assert all(record["input"].startswith("Animal ") for record in train)
-    assert all(record["input"].startswith("Observation for animal ") for record in validation)
-    assert all(record["input"].startswith("Case ") for record in test)
+    pools = {
+        split: {phrase for phrases in categories.values() for phrase in phrases}
+        for split, categories in symptoms_by_split.items()
+    }
+    assert pools["train"].isdisjoint(pools["validation"])
+    assert pools["train"].isdisjoint(pools["test"])
+    assert pools["validation"].isdisjoint(pools["test"])
 
+    for split_name, records in (
+        ("train", train),
+        ("validation", validation),
+        ("test", test),
+    ):
+        for record in records:
+            matches = [
+                (category, phrase)
+                for category, phrases in symptoms_by_split[split_name].items()
+                for phrase in phrases
+                if phrase in record["input"]
+            ]
+            assert len(matches) == 1
+            category, _ = matches[0]
+            assert f"cat={category}" in record["output"]
+
+
+def test_split_surface_grammar_is_consistent() -> None:
+    for split in ("train", "validation", "test"):
+        records = make_records(20, seed=31, split=split)
+        assert all(record["input"].startswith("Animal ") for record in records)
+        assert all(" was observed with " in record["input"] for record in records)
 
 @pytest.mark.parametrize("count", [0, -1])
 def test_generator_rejects_non_positive_counts(count: int) -> None:
