@@ -159,7 +159,6 @@ def test_data_check_validates_and_reports_test_file(tmp_path: Path, capsys) -> N
     assert payload["test_source"] == "test_file"
 
 
-
 def test_export_parser_requires_explicit_overwrite_flag() -> None:
     parser = build_parser()
 
@@ -168,7 +167,6 @@ def test_export_parser_requires_explicit_overwrite_flag() -> None:
 
     assert safe.overwrite is False
     assert replace.overwrite is True
-
 
 
 def test_existing_export_destination_is_a_clean_cli_error(monkeypatch) -> None:
