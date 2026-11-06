@@ -107,7 +107,6 @@ def test_v4_instruction_enumerates_the_complete_output_schema() -> None:
     assert "Do not add explanations" in INSTRUCTION
 
 
-
 def test_v4_audit_rejects_category_label_that_conflicts_with_concept() -> None:
     data = _make_data("A", (60, 24, 24), 71)
     row = data["train"][0]
