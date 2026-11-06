@@ -140,21 +140,26 @@ def target_severity_counts(count):
 
 
 def infer_severity_from_note(note, track, split):
-    """Reconstruct severity from the split's actual cue phrases.
+    """Reconstruct severity from the three positional cue phrases.
 
     This checks label-to-input consistency against the benchmark's declared
     rule. It is not an independent clinical or semantic judgement.
     """
     cue_split = "train" if track == "A" else split
     cues = CUES[cue_split]
-    dimensions = {
-        "systemic": ("normal", "mild", "critical"),
-        "function": ("normal", "limited", "failed"),
-        "trajectory": ("improving", "stable", "worsening"),
-    }
+    dimensions = (
+        ("systemic", ("normal", "mild", "critical")),
+        ("function", ("normal", "limited", "failed")),
+        ("trajectory", ("improving", "stable", "worsening")),
+    )
+    segments = note.split(". ")
+    if len(segments) != 4 or not segments[0].startswith("Observation: "):
+        raise ValueError("Expected an observation followed by exactly three cue segments")
+
     observed = {}
-    for dimension, keys in dimensions.items():
-        matches = [key for key in keys if cues[key] in note]
+    for (dimension, keys), segment in zip(dimensions, segments[1:], strict=True):
+        cue_text = segment.removesuffix(".")
+        matches = [key for key in keys if cues[key] == cue_text]
         if len(matches) != 1:
             raise ValueError(f"Expected exactly one {dimension} cue for {split}, found {matches}")
         observed[dimension] = matches[0]
