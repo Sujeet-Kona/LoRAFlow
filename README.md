@@ -16,7 +16,7 @@ No external benchmark is reproduced and no accuracy is claimed beyond this synth
 | LoRA training | `Qwen/Qwen2.5-0.5B`, rank 8 / alpha 16 on `q_proj,v_proj`; 540,672 trainable of 494,573,440 params (0.109%); 3 epochs = 90 steps; `mps` + `torch.float32`; seed 42; 413 s wall clock; `train_loss` 0.8618; best held-out `eval_loss` 0.1346336007118225 at `checkpoint-90` |
 | Baseline vs fine-tuned (same 120 held-out examples) | mean answer-token loss `4.0200 → 0.1490`; perplexity `55.6996 → 1.1606`; answer-token accuracy `0.4645 → 0.9551`; exact match `0.0000 → 0.5000`; 3-token prefix match `0.0000 → 0.5000` |
 | Per-field generation accuracy (24 greedy outputs) | `sev=` `0.0 → 0.875`, `cat=` `0.0 → 0.5417`, `act=` `0.0 → 0.875` |
-| Adapter export | 5 files copied, 540,672 params, tokenizer reloaded from the export (`Qwen2Tokenizer`, vocab 151,665, pad/eos 151,643) |
+| Adapter export | 5 files copied, 540,672 adapter params; exported adapter reloaded onto its recorded base model and passed a forward check (`Qwen2Tokenizer`, vocab 151,665, pad/eos 151,643) |
 | Merged export | 494,032,768 params; `max_logit_delta` 0.000303 against tolerance 0.05, measured on a real held-out prompt before and after `merge_and_unload` |
 | Serving | `/health`, `/generate`, `/metrics` verified live against the adapter on `mps`; malformed bodies rejected with 422, an over-long prompt with 400, unknown routes with 404 |
 | Tracking | `loraflow mlflow-ui` serves the SQLite store; five finished runs (two `train`, three `evaluate`) listed through its REST API, with the adapter directory and each JSON report attached as an artifact |
@@ -48,7 +48,8 @@ python scripts/make_dataset.py                 # deterministic 480 train / 120 v
 loraflow data-check --config configs/train.yaml
 loraflow train      --config configs/train.yaml
 loraflow evaluate   --config configs/train.yaml
-loraflow export     --config configs/train.yaml              # adapter + tokenizer
+loraflow export     --config configs/train.yaml              # adapter + tokenizer; refuses to replace an existing export
+loraflow export     --config configs/train.yaml --overwrite  # explicitly replace the adapter export
 loraflow export     --config configs/train.yaml --merged     # merged standalone weights
 loraflow serve      --config configs/train.yaml --port 8125
 loraflow mlflow-ui                                             # tracked runs and metrics
@@ -117,8 +118,8 @@ short free-text observation note plus a three-field answer (`sev=… cat=… act
 fixed rules. The action vocabulary (`log_only`, `recheck_12h`, `flag_vet_now`) and the
 `key=value` schema are not something a base 0.5B model produces from pretraining alone, which
 is why the baseline scores 0.0 exact match and the fine-tuned adapter is genuinely different
-rather than nominally so. Records are generated from fixed, disjoint seeds for train and
-validation, so reruns reproduce the same 480/120 files byte for byte. Use real instruction-tuning JSONL with the configured instruction and output fields, plus an optional input field. Plain-text-only records are not supported for supervised instruction tuning.
+rather than nominally so. Records are generated from fixed, disjoint seeds for train,
+validation, and test, so reruns reproduce all three files byte for byte. Use real instruction-tuning JSONL with the configured instruction and output fields, plus an optional input field. Plain-text-only records are not supported for supervised instruction tuning.
 
 ## Configuration
 
@@ -135,7 +136,7 @@ validation, so reruns reproduce the same 480/120 files byte for byte. Use real i
   `max_new_tokens`, `batch_size`; both models score the *same* held-out list.
 - `tracking.*` — `sqlite:///mlflow.db` by default because MLflow 3.x keeps the plain filesystem
   store in maintenance mode; artifacts go to `artifacts_dir`.
-- `export.*` — `output_dir`, `merged_dir`, `merge_and_save`, `save_dtype`, `verify_reload`.
+- `export.*` — `output_dir`, `merged_dir`, `merge_and_save`, `save_dtype`, `verify_reload`. Adapter export reloads the adapter on its recorded base model and runs a forward check when `verify_reload: true`; merged export always performs its adapter-vs-merged logit check.
 - `serving.*` — `host`, `port`, `device`, `max_new_tokens`, `max_input_chars`,
   `max_concurrent_requests`, `log_level`.
 
@@ -182,7 +183,7 @@ command takes `--backend-store-uri`, not `--tracking-uri` — the CLI passes the
 
 ## Tests
 
-`pytest` runs 154 test cases across the module-focused test files. Coverage: JSONL validation with the offending line
+`pytest` runs the module-focused test suite across the core, ML integration, export, API, and CLI modules. Coverage: JSONL validation with the offending line
 number, template rendering (empty input blocks, custom templates, whitespace-terminated templates,
 unknown placeholders), seeded split determinism and disjointness, deduplication, split statistics,
 device and dtype resolution including the unavailable-accelerator error, seeding, atomic JSON writes,
@@ -190,11 +191,11 @@ answer normalization, exact/prefix/per-field scoring, perplexity, masked token a
 formatting, prompt/completion column shape, LoRA and `SFTConfig` translation (including
 `completion_only_loss` and holding CUDA-only precision flags off the MPS path), best-checkpoint
 selection, adapter parameter counting, answer-label masking and input-block recovery in evaluation,
-export file/zero-byte/unknown-kind rejection and the logit-delta helper used by the merge check, every
+export file/zero-byte/unknown-kind rejection, real adapter reload validation, explicit overwrite safety, and the logit-delta helper used by the merge check, every
 API route including the 400/404/422/500/503 paths, and the CLI parser, its exit codes, and the
 argument list `mlflow-ui` hands to MLflow's server.
 
-Model-dependent suites gate on `pytest.importorskip`, so the core logic proves out without torch. The
+Export destinations are not removed implicitly: if the destination already exists, the command fails without changing it. Use `loraflow export --overwrite` only when replacing that directory is intentional. Model-dependent suites gate on `pytest.importorskip`, so the core logic proves out without torch. The
 actual base-versus-adapter comparison needs weights, so it is exercised by the CI pipeline job on
 `sshleifer/tiny-gpt2` and by the recorded MPS run rather than as a unit test.
 
