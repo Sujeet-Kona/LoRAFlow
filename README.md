@@ -6,7 +6,7 @@ An independently implemented, modular pipeline for preparing datasets, fine-tuni
 
 ## Historical v1 measurements — not generalization evidence
 
-**Dataset audit disclosure:** the original v1 synthetic corpus used label-correlated phrase templates. Its audit found 65–71% template overlap in held-out splits and an 82.5–85% 1-nearest-neighbour exact-match baseline. The model measurements below are retained as historical pipeline/reproducibility evidence only; they must not be presented as proof of task generalization. The v2 generator now derives severity from independent scenario attributes and uses split-specific surface-form families. A new v2 model-quality result is intentionally not claimed until the regenerated corpus passes audit and baseline comparisons.
+**Dataset audit disclosure:** the original v1 synthetic corpus used label-correlated phrase templates. Its audit found 65–71% template overlap in held-out splits and an 82.5–85% 1-nearest-neighbour exact-match baseline. The model measurements below are retained as historical pipeline/reproducibility evidence only; they must not be presented as proof of task generalization. The v2 audit exposed a closed-vocabulary shortcut: the same symptom concepts appeared in every split. The v3 generator now holds out symptom concepts by category (three concepts per category for training, one for validation, and one for test), while severity is derived from independent systemic, functional, and trajectory attributes. The audit checks concept disjointness, category consistency, action-policy consistency, and nearest-neighbour plus per-field majority baselines. No v3 model-quality result is claimed until the generated corpus passes that audit and the baselines are inspected.
 
 The figures below were printed by real v1 runs on this machine and are retained as historical artifacts:
 `artifacts/{train-run,repro-run}/training_metadata.json`, `artifacts/{train-run,repro-run}/evaluation_report.json`,
@@ -46,7 +46,7 @@ pip install -e ".[train,serve]"    # ML stages
 ```
 
 ```bash
-python scripts/make_dataset.py                 # writes isolated v2 data to data/v2/; preserves the old v1 files
+python scripts/make_dataset.py                 # writes isolated v3 data to data/v3/; preserves v1 and v2
 loraflow data-check --config configs/train.yaml
 loraflow train      --config configs/train.yaml
 loraflow evaluate   --config configs/train.yaml
@@ -93,7 +93,7 @@ LoRAFlow/
 │   ├── repro_check.yaml         that run again, into a second output directory
 │   ├── smoke.yaml               2-step MPS validation
 │   └── ci_smoke.yaml            tiny-gpt2 / CPU / 2 steps, tracking off
-├── scripts/make_dataset.py      compositional synthetic v2 corpus generator
+├── scripts/make_dataset.py      compositional synthetic v3 corpus generator with concept holdouts
 ├── src/loraflow/
 │   ├── config.py                pydantic model, extra="forbid"
 │   ├── runtime.py               device/dtype resolution, seeding, JSON helpers
