@@ -199,6 +199,8 @@ def split_examples(
     total = len(examples)
     if total == 0:
         raise ValueError("Cannot split an empty dataset")
+    if minimum_train < 1:
+        raise ValueError("minimum_train must be at least one")
     if validation_size <= 0:
         raise ValueError("validation_size must be positive")
 
@@ -207,7 +209,11 @@ def split_examples(
     else:
         val_count = int(validation_size)
 
-    val_count = min(val_count, total - minimum_train)
+    if val_count > total - minimum_train:
+        raise ValueError(
+            f"Requested {val_count} validation examples from {total}; "
+            f"at least {minimum_train} training examples must remain"
+        )
     if val_count < 1:
         raise ValueError(
             f"Dataset of {total} examples cannot reserve a validation split "
