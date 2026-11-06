@@ -51,6 +51,26 @@ _COMPARED = (
 )
 
 
+def _build_scoring_row(
+    prompt_ids: list[int],
+    completion_ids: list[int],
+    *,
+    max_length: int,
+    source_line: int,
+) -> tuple[list[int], list[int]]:
+    """Build an untruncated scoring row or fail with the offending record."""
+
+    total = len(prompt_ids) + len(completion_ids)
+    if total > max_length:
+        raise ValueError(
+            f"Example on source line {source_line} needs {total} tokens "
+            f"(prompt={len(prompt_ids)}, completion={len(completion_ids)}), "
+            f"exceeding max_seq_length={max_length}; increase the limit or shorten the record."
+        )
+    input_ids = prompt_ids + completion_ids
+    return input_ids, _answer_labels(prompt_ids, completion_ids, input_ids)
+
+
 def _answer_labels(
     prompt_ids: list[int], completion_ids: list[int], input_ids: list[int]
 ) -> list[int]:
@@ -93,9 +113,15 @@ def score_teacher_forcing(
         ]
 
         rows = []
-        for prompt, completion in zip(prompts, completions, strict=True):
-            input_ids = (prompt + completion)[:max_length]
-            rows.append((input_ids, _answer_labels(prompt, completion, input_ids)))
+        for example, prompt, completion in zip(batch, prompts, completions, strict=True):
+            rows.append(
+                _build_scoring_row(
+                    prompt,
+                    completion,
+                    max_length=max_length,
+                    source_line=example.source_line,
+                )
+            )
 
         width = max(len(input_ids) for input_ids, _ in rows)
         input_batch, mask_batch, label_batch = [], [], []
