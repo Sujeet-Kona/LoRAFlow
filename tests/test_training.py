@@ -157,6 +157,7 @@ def test_build_sft_config_translates_training_knobs(tmp_path: Path) -> None:
     assert args.gradient_accumulation_steps == 3
     assert args.warmup_steps == 5
     assert args.max_length == 128
+    assert args.model_init_kwargs is None
     assert args.completion_only_loss is True
     assert args.remove_unused_columns is False
     assert args.eval_strategy == "steps"
