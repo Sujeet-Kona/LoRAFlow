@@ -128,7 +128,8 @@ only to training, one only to validation, and one only to test. This is a concep
 benchmark, not merely a sentence-template split. A generated `manifest.json` records the
 concept allocation and policy. Run `scripts/audit_dataset.py` with
 `--manifest data/v3/manifest.json` to enforce concept disjointness, category-to-concept
-consistency, action-to-severity consistency, and to report 1-nearest-neighbour and per-field
+consistency, severity-policy consistency from the visible scenario cues, action-to-severity
+consistency, and to report 1-nearest-neighbour and per-field
 majority baselines. Severity is derived from independently sampled systemic, functional, and
 trajectory attributes; action follows the explicit severity policy. The corpus remains a
 synthetic engineering fixture, not veterinary guidance or a clinical decision system. Five
