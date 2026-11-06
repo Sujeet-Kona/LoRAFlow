@@ -1,17 +1,17 @@
 import hashlib
-import importlib.util
 import json
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 import pytest
 
 
-VALIDATOR_PATH = Path(__file__).resolve().parents[1] / "scripts" / "verify_prompt_v2_data.py"
-VALIDATOR_SPEC = importlib.util.spec_from_file_location(
-    "verify_prompt_v2_data", VALIDATOR_PATH
+VALIDATOR_PATH = (
+    Path(__file__).resolve().parents[1] / "scripts" / "verify_prompt_v2_data.py"
 )
+VALIDATOR_SPEC = spec_from_file_location("verify_prompt_v2_data", VALIDATOR_PATH)
 assert VALIDATOR_SPEC is not None and VALIDATOR_SPEC.loader is not None
-validator = importlib.util.module_from_spec(VALIDATOR_SPEC)
+validator = module_from_spec(VALIDATOR_SPEC)
 VALIDATOR_SPEC.loader.exec_module(validator)
 
 
