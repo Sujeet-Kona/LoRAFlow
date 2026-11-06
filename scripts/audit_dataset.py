@@ -73,9 +73,7 @@ def _validate_manifest(manifest_path: Path, splits: dict[str, list[dict]]) -> di
                     f"found {len(matches)}"
                 )
             expected_category, _ = matches[0]
-            labels = dict(
-                re.findall(r"(sev|cat|act)=([a-z0-9_]+)", str(record.get("output", "")))
-            )
+            labels = dict(re.findall(r"(sev|cat|act)=([a-z0-9_]+)", str(record.get("output", ""))))
             if set(labels) != {"sev", "cat", "act"}:
                 raise ValueError(f"{split_name} record {index}: malformed output labels {labels}")
             if labels["cat"] != expected_category:
@@ -142,7 +140,9 @@ def main() -> int:
         help="Held-out split to audit; repeat for several splits",
     )
     parser.add_argument("--output", type=Path, help="Write the full audit JSON here")
-    parser.add_argument("--manifest", type=Path, help="Validate the generator contract and concept holdouts")
+    parser.add_argument(
+        "--manifest", type=Path, help="Validate the generator contract and concept holdouts"
+    )
     args = parser.parse_args()
 
     train = read_records(args.train)
@@ -150,9 +150,7 @@ def main() -> int:
     held = {name: read_records(path) for name, path in paths.items()}
     audit = audit_records(train, held)
     if args.manifest:
-        audit["generator_contract"] = _validate_manifest(
-            args.manifest, {"train": train, **held}
-        )
+        audit["generator_contract"] = _validate_manifest(args.manifest, {"train": train, **held})
 
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
