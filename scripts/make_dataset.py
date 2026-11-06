@@ -1,17 +1,8 @@
-"""Generate the bundled demo corpus for LoRAFlow.
+"""Generate a deterministic, compositional demo corpus for LoRAFlow.
 
-The corpus is a small, deterministic "animal-health note triage" task: each
-record asks the model to reduce a free-text barn note to a fixed one-line
-schema. The schema tokens (``sev=``/``cat=``/``act=`` and the action codes)
-are intentionally non-standard, so a base model cannot guess them from
-pretraining alone -- which makes the baseline-versus-fine-tuned delta real and
-measurable rather than assumed.
-
-Everything comes from a fixed seed, so rerunning the script reproduces the
-exact same files.
-
-Usage:
-    python scripts/make_dataset.py --out-dir data --train 480 --validation 120 --test 120
+This synthetic animal-observation task is not veterinary guidance. Category is derived
+from the symptom concept; severity is derived from independent systemic, functional,
+and trajectory attributes. The output action follows an explicit policy mapping.
 """
 
 from __future__ import annotations
@@ -23,144 +14,209 @@ from pathlib import Path
 from typing import Any
 
 INSTRUCTION = (
-    "Read the barn health note and label it with severity, category and action. "
-    "Reply with exactly one line in the form sev=<severity> cat=<category> "
-    "act=<action>. Use only the codes defined by the triage table."
+    "Read the animal observation and return its severity, category and next action. "
+    "Reply with exactly one line: sev=<severity> cat=<category> act=<action>. "
+    "Use only the allowed codes."
 )
 
 CATEGORIES = ("mobility", "feeding", "respiratory", "skin", "behaviour", "unknown")
 SEVERITIES = ("routine", "watch", "urgent")
-
 ACTION_BY_SEVERITY = {
     "routine": "log_only",
     "watch": "recheck_12h",
     "urgent": "flag_vet_now",
 }
 
-# Category cues: phrase pool per category. The category label is decided by the
-# dominant cue present in the note.
-CATEGORY_CUES: dict[str, list[list[str]]] = {
-    "mobility": [
-        ["is limping on the", "front left leg"],
-        ["will not put weight on the", "back right hoof"],
-        ["stiff when standing up from the", "resting stall"],
-        ["knocks the", "left hind leg", "against the feeder while walking"],
-        ["has a sore", "front right fetlock"],
-    ],
-    "feeding": [
-        ["left the", "morning ration untouched"],
-        ["is eating much less", "than the rest of the herd"],
-        ["spit out the", "fresh silage"],
-        ["drank only a little", "water since dawn"],
-        ["lost condition at the", "ribs and spine"],
-    ],
-    "respiratory": [
-        ["is coughing", "through the night"],
-        ["has a runny", "nose and watery eyes"],
-        ["breathes fast even while", "standing still"],
-        ["makes a whistling", "sound when breathing out"],
-        ["has a dry", "hack at morning roll call"],
-    ],
-    "skin": [
-        ["has a raw", "patch behind the ear"],
-        ["is scratching the", "tail head until it is red"],
-        ["shows a crusty", "lesion on the belly"],
-        ["has flies landing on the", "wound at the shoulder"],
-        ["lost hair along the", "left flank"],
-    ],
-    "behaviour": [
-        ["stands apart from the", "group at the water trough"],
-        ["is head-pressing against the", "wall of the pen"],
-        ["will not follow the", "herd out to pasture"],
-        ["is grinding teeth and", "refusing to move"],
-        ["shows unusual", "aggression at feeding time"],
-    ],
+SYMPTOMS: dict[str, tuple[str, ...]] = {
+    "mobility": (
+        "favors one hind leg while walking",
+        "hesitates before putting weight on a front hoof",
+        "rises slowly after resting",
+        "takes shorter steps than the other animals",
+        "keeps stumbling on level ground",
+    ),
+    "feeding": (
+        "leaves most of the feed in the trough",
+        "takes only a few mouthfuls at feeding time",
+        "drinks noticeably less water than usual",
+        "chews slowly and drops some of the feed",
+        "has gradually lost body condition",
+    ),
+    "respiratory": (
+        "coughs repeatedly during the observation",
+        "has discharge around the nostrils",
+        "breathes faster than expected while resting",
+        "makes an unusual sound while breathing",
+        "shows increased effort when breathing",
+    ),
+    "skin": (
+        "has an irritated patch beneath the coat",
+        "keeps rubbing the same area against a post",
+        "has a small open area on the shoulder",
+        "shows hair loss along one side",
+        "has swelling around a recent skin wound",
+    ),
+    "behaviour": (
+        "stays away from the rest of the group",
+        "does not respond to its usual call",
+        "repeatedly presses its head against a surface",
+        "acts unusually restless during handling",
+        "shows a marked change in its normal routine",
+    ),
+    "unknown": (
+        "appears different from its usual self",
+        "has an observation that cannot be localised",
+        "was reported as unwell without further detail",
+        "shows a change that the observer cannot describe",
+        "has no clear symptom recorded in the note",
+    ),
 }
 
-SEVERITY_CUES: dict[str, list[str]] = {
-    "urgent": [
-        "The animal cannot stand up.",
-        "It collapsed in the stall.",
-        "It is shaking with fever.",
-        "It is breathing through its mouth at rest.",
-        "It has not eaten for two days.",
-        "The wound is still bleeding.",
-        "Its temperature is running very high.",
-    ],
-    "watch": [
-        "The sign is mild but has persisted for several days.",
-        "It started yesterday morning and is slowly worsening.",
-        "The change is small but it needs a closer look.",
-        "It has been less lively than usual this week.",
-        "Nothing severe so far, but it is worth rechecking.",
-    ],
-    "routine": [
-        "Otherwise bright and alert.",
-        "Moving normally, with no other change today.",
-        "Comfortable at rest and drinking well.",
-        "Eating fine apart from this note.",
-        "No other change since the last check.",
-    ],
+SYSTEMIC_STATES = ("normal", "mild", "critical")
+FUNCTION_STATES = ("normal", "limited", "failed")
+TRAJECTORY_STATES = ("improving", "stable", "worsening")
+
+SYSTEMIC_TEXT = {
+    "train": {
+        "normal": ("temperature and alertness are within the usual range", "no general change is observed"),
+        "mild": ("there is a mild change in general condition", "the animal seems slightly dull"),
+        "critical": ("the animal is markedly dull and has a very high temperature", "there is a severe change in general condition"),
+    },
+    "validation": {
+        "normal": ("general observations remain unremarkable", "alertness and temperature appear usual"),
+        "mild": ("the overall condition is somewhat reduced", "the observer notes a small general change"),
+        "critical": ("the animal is difficult to rouse and feels extremely hot", "the general condition is severely compromised"),
+    },
+    "test": {
+        "normal": ("no broader abnormality was noticed", "the general check did not raise concern"),
+        "mild": ("the wider check suggests a modest change", "the animal is a little less responsive overall"),
+        "critical": ("the animal barely responds and is extremely hot", "the wider check indicates a major systemic problem"),
+    },
 }
 
-# Notes with no locatable sign are the "unknown" category on purpose: the model
-# has to learn to abstain instead of guessing a body system.
-UNKNOWN_SUBJECTS = [
-    "the daily check found no clear localising sign",
-    "the herder reported something odd but could not describe it",
-    "nothing specific stood out during the walk-through",
-    "the only note is that the animal seems off today",
-    "no leg, feed, breathing, skin or behaviour detail was recorded",
-]
+FUNCTION_TEXT = {
+    "train": {
+        "normal": ("it can carry out its usual activities", "normal function is maintained"),
+        "limited": ("some usual activities are now difficult", "its normal activity is reduced"),
+        "failed": ("it cannot perform a basic usual activity", "it is unable to carry out a normal function"),
+    },
+    "validation": {
+        "normal": ("usual activity remains possible", "it continues to function normally"),
+        "limited": ("it manages only part of its usual activity", "ordinary movement or activity is restricted"),
+        "failed": ("it cannot complete a basic activity", "a normal function has been lost"),
+    },
+    "test": {
+        "normal": ("there is no limitation in its usual activity", "it remains able to do what it normally does"),
+        "limited": ("its ordinary activity is noticeably restricted", "it struggles with part of its usual routine"),
+        "failed": ("it is unable to complete an essential activity", "it has lost the ability to perform a basic function"),
+    },
+}
 
-ANIMAL_IDS = [f"A{i:03d}" for i in range(1, 241)]
+TRAJECTORY_TEXT = {
+    "train": {
+        "improving": ("the change has been easing", "the observation is less pronounced than before"),
+        "stable": ("the observation has remained much the same", "no clear change has been noted over time"),
+        "worsening": ("the change has become more pronounced", "the observation has continued to deteriorate"),
+    },
+    "validation": {
+        "improving": ("the signs have started to settle", "the situation appears to be getting better"),
+        "stable": ("the pattern has not shifted", "the same findings persist"),
+        "worsening": ("the signs are becoming more apparent", "the situation has been getting worse"),
+    },
+    "test": {
+        "improving": ("there has been a gradual recovery", "the earlier change is now less evident"),
+        "stable": ("the findings are still at the previous level", "the situation has not materially changed"),
+        "worsening": ("the findings have intensified", "the situation is deteriorating further"),
+    },
+}
+
+RECORD_FRAMES = {
+    "train": ("Animal {animal}: {symptom}. {systemic}. {function}. {trajectory}.",),
+    "validation": ("Observation for animal {animal} — {symptom}; {function}; {trajectory}; {systemic}.",),
+    "test": ("Case {animal} was recorded with {symptom}. During review, {trajectory}; {systemic}; {function}.",),
+}
+
+ANIMAL_IDS = tuple(f"A{i:03d}" for i in range(1, 241))
+MAX_UNIQUE_NOTES = (
+    len(ANIMAL_IDS)
+    * sum(len(values) for values in SYMPTOMS.values())
+    * len(SYSTEMIC_STATES)
+    * len(FUNCTION_STATES)
+    * len(TRAJECTORY_STATES)
+)
 
 
-def build_note(rng: random.Random, category: str, severity: str) -> str:
-    animal = rng.choice(ANIMAL_IDS)
-    if category == "unknown":
-        subject = rng.choice(UNKNOWN_SUBJECTS)
-    else:
-        subject = " ".join(rng.choice(CATEGORY_CUES[category]))
-    lead = f"Animal {animal}: {subject}."
-    return f"{lead} {rng.choice(SEVERITY_CUES[severity])}"
+def derive_severity(systemic: str, function: str, trajectory: str) -> str:
+    """Apply the policy to structured attributes, not to a preselected label."""
+
+    if systemic == "critical" or function == "failed":
+        return "urgent"
+    if systemic == "mild" or function == "limited" or trajectory == "worsening":
+        return "watch"
+    return "routine"
 
 
-def labelled_note(rng: random.Random) -> tuple[str, str, str]:
-    """Draw one (note, category, severity) pair with a realistic class mix."""
-    category = rng.choices(CATEGORIES, weights=[20, 18, 18, 16, 16, 12], k=1)[0]
-    severity = rng.choices(SEVERITIES, weights=[40, 40, 20], k=1)[0]
-    return build_note(rng, category, severity), category, severity
+def build_note(
+    rng: random.Random,
+    category: str,
+    systemic: str,
+    function: str,
+    trajectory: str,
+    *,
+    split: str = "train",
+) -> str:
+    if split not in RECORD_FRAMES:
+        raise ValueError(f"unknown split family: {split!r}")
+    return rng.choice(RECORD_FRAMES[split]).format(
+        animal=rng.choice(ANIMAL_IDS),
+        symptom=rng.choice(SYMPTOMS[category]),
+        systemic=rng.choice(SYSTEMIC_TEXT[split][systemic]),
+        function=rng.choice(FUNCTION_TEXT[split][function]),
+        trajectory=rng.choice(TRAJECTORY_TEXT[split][trajectory]),
+    )
+
+
+def labelled_note(
+    rng: random.Random, *, split: str = "train"
+) -> tuple[str, str, str]:
+    """Sample independent scenario attributes and derive target labels."""
+
+    category = rng.choices(CATEGORIES, weights=[18, 18, 18, 16, 16, 14], k=1)[0]
+    systemic = rng.choices(SYSTEMIC_STATES, weights=[0.60, 0.25, 0.15], k=1)[0]
+    function = rng.choices(FUNCTION_STATES, weights=[0.60, 0.25, 0.15], k=1)[0]
+    trajectory = rng.choices(TRAJECTORY_STATES, weights=[0.25, 0.50, 0.25], k=1)[0]
+    severity = derive_severity(systemic, function, trajectory)
+    return build_note(rng, category, systemic, function, trajectory, split=split), category, severity
 
 
 def make_records(
-    count: int, seed: int, *, seen_notes: set[str] | None = None
+    count: int,
+    seed: int,
+    *,
+    seen_notes: set[str] | None = None,
+    split: str = "train",
 ) -> list[dict[str, Any]]:
-    """Generate unique records, optionally sharing a uniqueness set across splits."""
-    maximum_unique_notes = (
-        len(ANIMAL_IDS)
-        * sum(len(CATEGORY_CUES.get(category, UNKNOWN_SUBJECTS)) for category in CATEGORIES)
-        * sum(len(cues) for cues in SEVERITY_CUES.values())
-    )
+    """Generate unique instruction records for one independent split family."""
+
     if count < 1:
         raise ValueError("record count must be at least 1")
-    if count > maximum_unique_notes:
+    if count > MAX_UNIQUE_NOTES:
         raise ValueError(
             f"requested {count} records, but the generator has only "
-            f"{maximum_unique_notes} unique note combinations"
+            f"{MAX_UNIQUE_NOTES} unique scenario combinations"
         )
+    if split not in RECORD_FRAMES:
+        raise ValueError(f"split must be one of {tuple(RECORD_FRAMES)}")
 
     rng = random.Random(seed)
-    records = []
+    records: list[dict[str, Any]] = []
     seen = seen_notes if seen_notes is not None else set()
-    available_unique_notes = maximum_unique_notes - len(seen)
-    if count > available_unique_notes:
-        raise ValueError(
-            f"requested {count} records, but only {available_unique_notes} "
-            "unique note combinations remain in the shared set"
-        )
-    while len(records) < count:
-        note, category, severity = labelled_note(rng)
+    attempts = 0
+    max_attempts = max(10_000, count * 100)
+
+    while len(records) < count and attempts < max_attempts:
+        attempts += 1
+        note, category, severity = labelled_note(rng, split=split)
         if note in seen:
             continue
         seen.add(note)
@@ -168,10 +224,19 @@ def make_records(
             {
                 "instruction": INSTRUCTION,
                 "input": note,
-                "output": f"sev={severity} cat={category} act={ACTION_BY_SEVERITY[severity]}",
+                "output": (
+                    f"sev={severity} cat={category} "
+                    f"act={ACTION_BY_SEVERITY[severity]}"
+                ),
             }
         )
-    # Shuffle so a head/tail truncation still sees every class.
+
+    if len(records) != count:
+        raise RuntimeError(
+            f"generated only {len(records)} of {count} unique records after "
+            f"{attempts} attempts; reduce split sizes or expand the scenario space"
+        )
+
     rng.shuffle(records)
     return records
 
@@ -192,12 +257,13 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()
 
-    # Independent random seeds improve variation; a shared set guarantees that
-    # no exact note can leak between train, validation, and test.
+    # Separate split-specific language families plus exact-note disjointness.
     seen_notes: set[str] = set()
-    train = make_records(args.train, seed=args.seed, seen_notes=seen_notes)
-    validation = make_records(args.validation, seed=args.seed + 1, seen_notes=seen_notes)
-    test = make_records(args.test, seed=args.seed + 2, seen_notes=seen_notes)
+    train = make_records(args.train, args.seed, seen_notes=seen_notes, split="train")
+    validation = make_records(
+        args.validation, args.seed + 1, seen_notes=seen_notes, split="validation"
+    )
+    test = make_records(args.test, args.seed + 2, seen_notes=seen_notes, split="test")
 
     write_jsonl(args.out_dir / "train.jsonl", train)
     write_jsonl(args.out_dir / "validation.jsonl", validation)
