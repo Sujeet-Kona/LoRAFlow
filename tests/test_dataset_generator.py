@@ -11,10 +11,7 @@ def test_generated_partitions_are_exact_note_disjoint() -> None:
     validation = make_records(20, seed=8, seen_notes=seen)
     test = make_records(20, seed=9, seen_notes=seen)
 
-    notes = [
-        {record["input"] for record in split}
-        for split in (train, validation, test)
-    ]
+    notes = [{record["input"] for record in split} for split in (train, validation, test)]
     assert notes[0].isdisjoint(notes[1])
     assert notes[0].isdisjoint(notes[2])
     assert notes[1].isdisjoint(notes[2])
