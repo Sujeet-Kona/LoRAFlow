@@ -87,8 +87,18 @@ jobs:
           python - <<'PY'
           import json
           report = json.load(open("artifacts/ci-smoke/evaluation_report.json"))
-          for key in ("baseline", "fine_tuned", "delta", "reproducibility", "held_out"):
+          for key in (
+              "baseline",
+              "fine_tuned",
+              "delta",
+              "reproducibility",
+              "held_out",
+              "config_sha256",
+              "held_out_dataset",
+          ):
               assert key in report, f"missing {key}"
+          assert len(report["config_sha256"]) == 64
+          assert len(report["held_out_dataset"]["sha256"]) == 64
           for metric in ("mean_answer_loss", "perplexity", "answer_token_accuracy"):
               assert metric in report["baseline"], f"baseline missing {metric}"
               assert metric in report["fine_tuned"], f"fine_tuned missing {metric}"
