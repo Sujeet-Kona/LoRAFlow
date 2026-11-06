@@ -39,10 +39,6 @@ serve = [
   "peft>=0.14,<1",
   "torch>=2.6,<3",
 ]
-qlora = [
-  # bitsandbytes has no macOS/arm64 build; QLoRA stays a Linux/CUDA option.
-  "bitsandbytes>=0.43; platform_system == 'Linux'",
-]
 dev = [
   "pytest>=8.0",
   "ruff>=0.3",
