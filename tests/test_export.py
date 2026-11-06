@@ -12,6 +12,7 @@ from loraflow.config import AppConfig, DataConfig, ExportConfig, TrainingConfig 
 from loraflow.export import (  # noqa: E402
     ADAPTER_FILES,
     ExportValidationError,
+    _ensure_separate_export_path,
     _max_abs_delta,
     _save_dtype,
     validate_export,
@@ -146,3 +147,14 @@ def test_export_free_memory_clears_available_mps(monkeypatch) -> None:
     monkeypatch.setattr(torch.mps, "empty_cache", lambda: calls.append(True))
     _free_memory("mps")
     assert calls == [True]
+
+
+def test_export_destination_cannot_overlap_source(tmp_path: Path) -> None:
+    source = tmp_path / "adapter"
+    source.mkdir()
+
+    for target in (source, tmp_path, source / "nested"):
+        with pytest.raises(ValueError, match="overlaps source adapter"):
+            _ensure_separate_export_path(source, target)
+
+    assert source.is_dir()
