@@ -27,7 +27,7 @@ flowchart TD
     CI --> SMOKE["CPU train → evaluate → export → API smoke"]
 ```
 
-**Key boundaries:** training and evaluation are offline commands; serving loads an existing adapter and does not train or silently fall back. Export verifies reload integrity. CI exercises a small CPU path and validates Compose configuration; it does not build an image or deploy the service. The detailed component map and lifecycle are in [Architecture](docs/architecture.md).
+**Key boundaries:** training and evaluation are offline commands; serving loads an existing adapter and does not train or silently fall back. Export verifies reload integrity. CI exercises a small CPU path, verifies the committed Prompt-v2 split hashes/counts/JSONL structure, and validates Compose configuration; it does not build an image or deploy the service. The detailed component map and lifecycle are in [Architecture](docs/architecture.md).
 
 ---
 
