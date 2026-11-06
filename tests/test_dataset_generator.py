@@ -88,6 +88,7 @@ def test_split_surface_grammar_is_consistent() -> None:
         assert all(record["input"].startswith("Animal ") for record in records)
         assert all(" was observed with " in record["input"] for record in records)
 
+
 def test_manifest_audit_enforces_concept_and_label_contract(tmp_path: Path) -> None:
     splits = {
         "train": make_records(30, seed=41, split="train"),
@@ -112,6 +113,7 @@ def test_manifest_audit_enforces_concept_and_label_contract(tmp_path: Path) -> N
     assert result["records_checked"] == {"train": 30, "validation": 12, "test": 12}
     assert result["category_and_action_consistency"] == "passed"
     assert not any(result["cross_split_symptom_overlap"].values())
+
 
 @pytest.mark.parametrize("count", [0, -1])
 def test_generator_rejects_non_positive_counts(count: int) -> None:
