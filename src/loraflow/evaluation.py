@@ -107,14 +107,6 @@ def _build_prompt_completion_row(
     return full_ids, labels
 
 
-def _completion_with_eos(completion_ids: list[int], eos_token_id: int | None) -> list[int]:
-    """Match TRL SFT preprocessing by scoring the completion terminator too."""
-
-    if eos_token_id is None or (completion_ids and completion_ids[-1] == eos_token_id):
-        return completion_ids
-    return [*completion_ids, eos_token_id]
-
-
 def _answer_labels(
     prompt_ids: list[int], completion_ids: list[int], input_ids: list[int]
 ) -> list[int]:
