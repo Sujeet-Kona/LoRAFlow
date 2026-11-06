@@ -139,6 +139,32 @@ def target_severity_counts(count):
     return {"routine": routine, "watch": watch, "urgent": count - routine - watch}
 
 
+def infer_severity_from_note(note, split):
+    """Reconstruct severity from the split's actual cue phrases.
+
+    This checks label-to-input consistency against the benchmark's declared
+    rule. It is not an independent clinical or semantic judgement.
+    """
+    cue_split = "train" if split == "train" else split
+    cues = CUES[cue_split]
+    dimensions = {
+        "systemic": ("normal", "mild", "critical"),
+        "function": ("normal", "limited", "failed"),
+        "trajectory": ("improving", "stable", "worsening"),
+    }
+    observed = {}
+    for dimension, keys in dimensions.items():
+        matches = [key for key in keys if cues[key] in note]
+        if len(matches) != 1:
+            raise ValueError(
+                f"Expected exactly one {dimension} cue for {split}, found {matches}"
+            )
+        observed[dimension] = matches[0]
+    return derive_severity(
+        observed["systemic"], observed["function"], observed["trajectory"]
+    )
+
+
 def allowed_concepts(track, split, category):
     if track == "B":
         return CONCEPTS[category]
@@ -284,6 +310,12 @@ def audit(track, data):
             severity, category, action = (part.split("=", 1)[1] for part in parts)
             if severity not in ACTIONS or category not in CATEGORIES:
                 raise ValueError("Unknown target label")
+            inferred_severity = infer_severity_from_note(row["input"], split)
+            if severity != inferred_severity:
+                raise ValueError(
+                    f"{track}/{split}: severity label {severity!r} conflicts "
+                    f"with input-derived severity {inferred_severity!r}"
+                )
             concept_category = next(
                 category_name
                 for category_name, phrases in CONCEPTS.items()
