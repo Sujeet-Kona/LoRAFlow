@@ -125,3 +125,8 @@ def test_field_scores_empty_inputs() -> None:
 
 def test_format_delta_shows_both_ends() -> None:
     assert format_delta(0.1, 0.25) == "0.1000 -> 0.2500 (+0.1500)"
+
+
+def test_token_accuracy_rejects_mismatched_lengths() -> None:
+    with pytest.raises(ValueError):
+        token_accuracy([1, 2], [-100])
