@@ -106,6 +106,8 @@ def test_lexical_baseline_memorises_identical_notes() -> None:
     # The first held note differs from a training note only by id, so lookup copies it.
     assert baseline["exact_match_1nn"] == 0.5
     assert baseline["per_field_1nn"]["cat"] == 0.5
+    assert "cat" in baseline["per_field_majority"]
+    assert baseline["per_field_majority"]["cat"] in (0.0, 0.5, 1.0)
     assert baseline["majority_output"].startswith("sev=")
 
 
