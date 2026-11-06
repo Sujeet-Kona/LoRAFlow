@@ -426,7 +426,10 @@ def evaluate_config(
     LOGGER.info("wrote evaluation report to %s", config.evaluation.output_file)
 
     if tracker is not None:
-        tracker.log_evaluation(report)
+        try:
+            tracker.log_evaluation(report)
+        finally:
+            tracker.finish()
     return report
 
 
