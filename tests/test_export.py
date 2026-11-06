@@ -205,6 +205,12 @@ def test_adapter_export_reload_loads_base_and_applies_adapter(tmp_path: Path, mo
     calls = []
 
     class FakeTokenizer:
+        pad_token_id = 0
+        eos_token_id = 1
+
+        def __len__(self):
+            return 10
+
         def __call__(self, prompt, *, return_tensors):
             assert prompt == "LoRAFlow adapter reload validation."
             assert return_tensors == "pt"
