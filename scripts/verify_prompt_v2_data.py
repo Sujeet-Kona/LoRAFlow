@@ -53,9 +53,7 @@ def verify_track(track: str) -> dict[str, int]:
         rows = [line for line in raw.splitlines() if line.strip()]
         expected_count = counts.get(split)
         if len(rows) != expected_count:
-            raise ValueError(
-                f"{path}: expected {expected_count} records, got {len(rows)}"
-            )
+            raise ValueError(f"{path}: expected {expected_count} records, got {len(rows)}")
 
         for line_number, line in enumerate(rows, start=1):
             try:
@@ -64,14 +62,8 @@ def verify_track(track: str) -> dict[str, int]:
                 raise ValueError(f"{path}:{line_number}: invalid JSON: {exc}") from exc
             required = {"instruction", "input", "output"}
             if not isinstance(record, dict) or not required.issubset(record):
-                raise ValueError(
-                    f"{path}:{line_number}: expected object with "
-                    f"{sorted(required)} fields"
-                )
-            if not all(
-                isinstance(record[key], str) and record[key].strip()
-                for key in required
-            ):
+                raise ValueError(f"{path}:{line_number}: expected object with {sorted(required)} fields")
+            if not all(isinstance(record[key], str) and record[key].strip() for key in required):
                 raise ValueError(
                     f"{path}:{line_number}: instruction, input, and output "
                     "must be non-empty strings"
