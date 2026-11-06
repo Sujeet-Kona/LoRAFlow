@@ -42,6 +42,7 @@ def test_load_config_requires_mapping_root(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="YAML mapping"):
         load_config(path)
 
+
 def test_data_config_accepts_absolute_validation_count() -> None:
     config = AppConfig.model_validate(
         {
