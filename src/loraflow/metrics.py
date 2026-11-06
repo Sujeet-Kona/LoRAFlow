@@ -170,7 +170,6 @@ def field_scores(predictions: Sequence[str], golds: Sequence[str]) -> dict[str, 
     }
 
 
-
 FIELD_LABELS = {
     "sev": ("routine", "watch", "urgent"),
     "cat": ("mobility", "feeding", "respiratory", "skin", "behaviour", "unknown"),
