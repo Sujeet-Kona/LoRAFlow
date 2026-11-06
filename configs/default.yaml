@@ -1,0 +1,22 @@
+data:
+  train_file: data/train.jsonl
+  validation_file: data/validation.jsonl
+  text_field: text
+  max_seq_length: 1024
+
+lora:
+  rank: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - v_proj
+
+training:
+  base_model: Qwen/Qwen2.5-0.5B
+  output_dir: artifacts/default-run
+  num_train_epochs: 1
+  learning_rate: 0.0002
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 4
+  seed: 42
