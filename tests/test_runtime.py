@@ -2,10 +2,10 @@
 
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
+np = pytest.importorskip("numpy")
 
 from loraflow.runtime import (  # noqa: E402
     cpu_threads,
