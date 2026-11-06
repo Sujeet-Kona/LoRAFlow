@@ -1,6 +1,7 @@
 data:
   train_file: data/train.jsonl
   validation_file: data/validation.jsonl
+  test_file: data/test.jsonl
   max_seq_length: 256
 
 lora:
