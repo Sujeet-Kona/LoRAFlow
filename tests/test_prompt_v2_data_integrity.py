@@ -1,6 +1,6 @@
 import hashlib
 import json
-from importlib.util import module_from_spec, spec_from_file_location
+import runpy
 from pathlib import Path
 
 import pytest
@@ -9,10 +9,7 @@ import pytest
 VALIDATOR_PATH = (
     Path(__file__).resolve().parents[1] / "scripts" / "verify_prompt_v2_data.py"
 )
-VALIDATOR_SPEC = spec_from_file_location("verify_prompt_v2_data", VALIDATOR_PATH)
-assert VALIDATOR_SPEC is not None and VALIDATOR_SPEC.loader is not None
-validator = module_from_spec(VALIDATOR_SPEC)
-VALIDATOR_SPEC.loader.exec_module(validator)
+validator = runpy.run_path(str(VALIDATOR_PATH))
 
 
 def _write_track(directory, *, record=None):
@@ -25,7 +22,7 @@ def _write_track(directory, *, record=None):
     counts = {}
     hashes = {}
 
-    for split in validator.SPLITS:
+    for split in validator["SPLITS"]:
         path = directory / f"{split}.jsonl"
         raw = (json.dumps(row) + "\\n").encode("utf-8")
         path.write_bytes(raw)
@@ -40,9 +37,9 @@ def _write_track(directory, *, record=None):
 
 def test_verify_track_accepts_valid_manifest_and_splits(tmp_path, monkeypatch):
     _write_track(tmp_path / "track_a")
-    monkeypatch.setattr(validator, "DATA_ROOT", tmp_path)
+    monkeypatch.setitem(validator, "DATA_ROOT", tmp_path)
 
-    assert validator.verify_track("a") == {
+    assert validator["verify_track"]("a") == {
         "train": 1,
         "validation": 1,
         "test": 1,
