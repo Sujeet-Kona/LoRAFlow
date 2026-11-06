@@ -209,26 +209,25 @@ TRAJECTORY_TEXT = {
 }
 
 RECORD_FRAMES = {
-    "train": ("Animal {animal}: {symptom}. {systemic}. {function}. {trajectory}.",),
-    "validation": (
-        "Observation for animal {animal} — {symptom}; {function}; {trajectory}; {systemic}.",
-    ),
-    "test": (
-        "Case {animal} was recorded with {symptom}. During review, {trajectory}; {systemic}; {function}.",
-    ),
+    split: ("Animal {animal} was observed with {symptom}. {systemic}. {function}. {trajectory}.",)
+    for split in SYMPTOMS_BY_SPLIT
 }
 
 ANIMAL_IDS = tuple(f"A{i:03d}" for i in range(1, 241))
-MAX_UNIQUE_NOTES = (
-    len(ANIMAL_IDS)
-    * sum(len(values) for values in SYMPTOMS.values())
-    * len(SYSTEMIC_STATES)
-    * 2  # two paraphrases per systemic state
-    * len(FUNCTION_STATES)
-    * 2  # two paraphrases per functional state
-    * len(TRAJECTORY_STATES)
-    * 2  # two paraphrases per trajectory state
-)
+MAX_UNIQUE_NOTES_BY_SPLIT = {
+    split: (
+        len(ANIMAL_IDS)
+        * sum(len(values) for values in concepts.values())
+        * len(SYSTEMIC_STATES)
+        * 2
+        * len(FUNCTION_STATES)
+        * 2
+        * len(TRAJECTORY_STATES)
+        * 2
+    )
+    for split, concepts in SYMPTOMS_BY_SPLIT.items()
+}
+MAX_UNIQUE_NOTES = max(MAX_UNIQUE_NOTES_BY_SPLIT.values())
 
 
 def derive_severity(systemic: str, function: str, trajectory: str) -> str:
@@ -254,7 +253,7 @@ def build_note(
         raise ValueError(f"unknown split family: {split!r}")
     return rng.choice(RECORD_FRAMES[split]).format(
         animal=rng.choice(ANIMAL_IDS),
-        symptom=rng.choice(SYMPTOMS[category]),
+        symptom=rng.choice(SYMPTOMS_BY_SPLIT[split][category]),
         systemic=rng.choice(SYSTEMIC_TEXT[split][systemic]),
         function=rng.choice(FUNCTION_TEXT[split][function]),
         trajectory=rng.choice(TRAJECTORY_TEXT[split][trajectory]),
@@ -287,13 +286,14 @@ def make_records(
 
     if count < 1:
         raise ValueError("record count must be at least 1")
-    if count > MAX_UNIQUE_NOTES:
+    if split not in SYMPTOMS_BY_SPLIT:
+        raise ValueError(f"split must be one of {tuple(SYMPTOMS_BY_SPLIT)}")
+    capacity = MAX_UNIQUE_NOTES_BY_SPLIT[split]
+    if count > capacity:
         raise ValueError(
-            f"requested {count} records, but the generator has only "
-            f"{MAX_UNIQUE_NOTES} unique scenario combinations"
+            f"requested {count} records for {split}, but that split has only "
+            f"{capacity} unique scenario combinations"
         )
-    if split not in RECORD_FRAMES:
-        raise ValueError(f"split must be one of {tuple(RECORD_FRAMES)}")
 
     rng = random.Random(seed)
     records: list[dict[str, Any]] = []
@@ -334,7 +334,7 @@ def write_jsonl(path: Path, records: list[dict[str, Any]]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out-dir", type=Path, default=Path("data/v2"))
+    parser.add_argument("--out-dir", type=Path, default=Path("data/v3"))
     parser.add_argument("--train", type=int, default=480)
     parser.add_argument("--validation", type=int, default=120)
     parser.add_argument("--test", type=int, default=120)
@@ -352,6 +352,26 @@ def main() -> None:
     write_jsonl(args.out_dir / "train.jsonl", train)
     write_jsonl(args.out_dir / "validation.jsonl", validation)
     write_jsonl(args.out_dir / "test.jsonl", test)
+    manifest = {
+        "dataset_version": "v3",
+        "seed": args.seed,
+        "counts": {"train": len(train), "validation": len(validation), "test": len(test)},
+        "symptom_concepts_by_split": {
+            split: {category: list(phrases) for category, phrases in categories.items()}
+            for split, categories in SYMPTOMS_BY_SPLIT.items()
+        },
+        "severity_policy": {
+            "urgent": "systemic=critical OR function=failed",
+            "watch": "otherwise systemic=mild OR function=limited OR trajectory=worsening",
+            "routine": "otherwise",
+        },
+        "action_by_severity": ACTION_BY_SEVERITY,
+        "synthetic_data_warning": "Engineering fixture only; not veterinary guidance.",
+    }
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    (args.out_dir / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\\n", encoding="utf-8"
+    )
     print(
         f"wrote {len(train)} train + {len(validation)} validation + "
         f"{len(test)} test records to {args.out_dir}"
