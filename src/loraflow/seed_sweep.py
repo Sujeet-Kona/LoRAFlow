@@ -135,9 +135,7 @@ def run_seed_sweep(track: str, seeds: list[int], output_root: Path) -> dict[str,
         config["export"]["output_dir"] = str(export_dir)
         config["export"]["merged_dir"] = str(export_dir / "merged")
         config["tracking"]["run_name"] = f"prompt-v2-track-{track}-seed-{seed}"
-        config_path.write_text(
-            yaml.safe_dump(config, sort_keys=False), encoding="utf-8"
-        )
+        config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
 
         for command in (
             ["loraflow", "train", "--config", str(config_path)],
@@ -149,9 +147,7 @@ def run_seed_sweep(track: str, seeds: list[int], output_root: Path) -> dict[str,
         report = json.loads(report_path.read_text(encoding="utf-8"))
         recorded_seed = report.get("reproducibility", {}).get("seed")
         if recorded_seed != seed:
-            raise RuntimeError(
-                f"Expected seed {seed} in {report_path}, found {recorded_seed!r}"
-            )
+            raise RuntimeError(f"Expected seed {seed} in {report_path}, found {recorded_seed!r}")
         reports.append(report)
 
     result = summarize_reports(reports)
