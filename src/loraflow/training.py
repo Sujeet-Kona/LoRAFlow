@@ -217,7 +217,6 @@ def build_sft_config(
         completion_only_loss=True,
         packing=False,
         max_length=config.data.max_seq_length,
-        model_init_kwargs={_dtype_kwarg_name(): dtype},
     )
 
 
