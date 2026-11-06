@@ -103,7 +103,10 @@ def export_adapter(
     LOGGER.info("exported adapter to %s (%d files)", target, len(copied))
 
     if tracker is not None:
-        tracker.log_export(report)
+        try:
+            tracker.log_export(report)
+        finally:
+            tracker.finish()
     return report
 
 
@@ -187,7 +190,10 @@ def merge_and_export(
     LOGGER.info("merged export verified at %s (delta %.4f)", target, max_logit_delta)
 
     if tracker is not None:
-        tracker.log_export(report)
+        try:
+            tracker.log_export(report)
+        finally:
+            tracker.finish()
     return report
 
 
