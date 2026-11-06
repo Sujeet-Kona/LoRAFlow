@@ -55,6 +55,9 @@ jobs:
           cache: pip
           allow-prereleases: true
       - run: pip install --upgrade pip
+      # Install the CPU-only wheel explicitly; the default PyPI torch build
+      # currently pulls CUDA runtime libraries onto runners with no GPU.
+      - run: pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple "torch==2.15.0+cpu"
       - run: pip install -e ".[train,serve,dev]"
       - run: python -c "import torch, transformers, trl, peft; print('torch', torch.__version__); print('transformers', transformers.__version__); print('trl', trl.__version__); print('peft', peft.__version__)"
 
