@@ -7,12 +7,13 @@ services:
     environment:
       HF_HOME: /data/huggingface
       TORCH_NUM_THREADS: "4"
+      LORAFLOW_MLFLOW_TRACKING_URI: sqlite:////mlflow/mlflow.db
+      LORAFLOW_MLFLOW_ARTIFACTS_DIR: file:///mlflow/artifacts
     volumes:
       - hf-cache:/data/huggingface
       - ./artifacts:/app/artifacts
       - ./data:/app/data
-      - ./mlflow.db:/app/mlflow.db
-      - ./mlartifacts:/app/mlartifacts
+      - ./mlflow-data:/mlflow
     command: ["loraflow", "serve", "--config", "configs/train.yaml", "--host", "0.0.0.0", "--port", "8000"]
 
   # One-shot pipeline stages. Each service can build the same image itself.
@@ -20,30 +21,38 @@ services:
     build: .
     image: loraflow:local
     profiles: ["pipeline"]
+    environment:
+      HF_HOME: /data/huggingface
+      LORAFLOW_MLFLOW_TRACKING_URI: sqlite:////mlflow/mlflow.db
+      LORAFLOW_MLFLOW_ARTIFACTS_DIR: file:///mlflow/artifacts
     volumes:
       - hf-cache:/data/huggingface
       - ./artifacts:/app/artifacts
       - ./data:/app/data
-      - ./mlflow.db:/app/mlflow.db
-      - ./mlartifacts:/app/mlartifacts
+      - ./mlflow-data:/mlflow
     command: ["loraflow", "train", "--config", "configs/train.yaml"]
 
   evaluate:
     build: .
     image: loraflow:local
     profiles: ["pipeline"]
+    environment:
+      HF_HOME: /data/huggingface
+      LORAFLOW_MLFLOW_TRACKING_URI: sqlite:////mlflow/mlflow.db
+      LORAFLOW_MLFLOW_ARTIFACTS_DIR: file:///mlflow/artifacts
     volumes:
       - hf-cache:/data/huggingface
       - ./artifacts:/app/artifacts
       - ./data:/app/data
-      - ./mlflow.db:/app/mlflow.db
-      - ./mlartifacts:/app/mlartifacts
+      - ./mlflow-data:/mlflow
     command: ["loraflow", "evaluate", "--config", "configs/train.yaml"]
 
   export:
     build: .
     image: loraflow:local
     profiles: ["pipeline"]
+    environment:
+      HF_HOME: /data/huggingface
     volumes:
       - hf-cache:/data/huggingface
       - ./artifacts:/app/artifacts
@@ -56,9 +65,8 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      # These paths must match the training container's resolved paths.
-      - ./mlflow.db:/app/mlflow.db
-      - ./mlartifacts:/app/mlartifacts
+      # Same persistent store and artifact directory as the pipeline containers.
+      - ./mlflow-data:/mlflow
     command:
       - mlflow
       - ui
@@ -67,9 +75,9 @@ services:
       - --port
       - "5000"
       - --backend-store-uri
-      - sqlite:////app/mlflow.db
+      - sqlite:////mlflow/mlflow.db
       - --default-artifact-root
-      - file:///app/mlartifacts
+      - file:///mlflow/artifacts
 
 volumes:
   hf-cache:
