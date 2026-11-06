@@ -127,6 +127,32 @@ def load_tokenizer(model_name: str, *, trust_remote_code: bool = False) -> AutoT
     return tokenizer
 
 
+def validate_examples_fit(
+    tokenizer: Any, examples: list[Example], *, max_length: int
+) -> None:
+    """Reject examples that TRL would silently truncate during SFT preprocessing."""
+
+    prompts = tokenizer([example.prompt for example in examples], add_special_tokens=False)[
+        "input_ids"
+    ]
+    completions = tokenizer(
+        [example.completion for example in examples], add_special_tokens=False
+    )["input_ids"]
+    eos_id = tokenizer.eos_token_id
+    for example, prompt_ids, completion_ids in zip(
+        examples, prompts, completions, strict=True
+    ):
+        total = len(prompt_ids) + len(completion_ids)
+        if eos_id is not None and (not completion_ids or completion_ids[-1] != eos_id):
+            total += 1  # TRL appends EOS to the completion.
+        if total > max_length:
+            raise ValueError(
+                f"Example on source line {example.source_line} needs {total} tokens "
+                f"including EOS, exceeding max_seq_length={max_length}; "
+                "increase the limit or shorten the record."
+            )
+
+
 def load_base_model(
     model_name: str,
     *,
@@ -223,8 +249,13 @@ def run_training(
     run_dir = Path(config.training.output_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    model = load_base_model(config.training.base_model, device=device, dtype=dtype)
     tokenizer = load_tokenizer(config.training.base_model)
+    validate_examples_fit(
+        tokenizer,
+        train_examples + validation_examples,
+        max_length=config.data.max_seq_length,
+    )
+    model = load_base_model(config.training.base_model, device=device, dtype=dtype)
     peft_config = build_lora_config(config)
 
     sft_config = build_sft_config(
