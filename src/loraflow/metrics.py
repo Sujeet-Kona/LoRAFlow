@@ -236,6 +236,7 @@ def structured_output_scores(predictions: Sequence[str]) -> dict[str, Any]:
     )
     missing: dict[str, int] = {}
     unexpected: dict[str, int] = {}
+    invalid_values: dict[str, dict[str, int]] = {}
     duplicates = 0
     valid = 0
     for prediction in predictions:
@@ -249,10 +250,15 @@ def structured_output_scores(predictions: Sequence[str]) -> dict[str, Any]:
                 missing[key] = missing.get(key, 0) + 1
         for key in set(fields) - set(EXPECTED_FIELDS):
             unexpected[key] = unexpected.get(key, 0) + 1
+        for key in EXPECTED_FIELDS:
+            value = fields.get(key)
+            if value is not None and value not in FIELD_LABELS[key]:
+                invalid_values.setdefault(key, {})
+                invalid_values[key][value] = invalid_values[key].get(value, 0) + 1
         if (
             set(fields) == set(EXPECTED_FIELDS)
             and len(keys) == len(EXPECTED_FIELDS)
-            and expected_pattern.fullmatch(normalized)
+            and expected_pattern.fullmatch(prediction.strip().lower())
         ):
             valid += 1
     total = len(predictions)
@@ -264,6 +270,7 @@ def structured_output_scores(predictions: Sequence[str]) -> dict[str, Any]:
         "duplicate_keys": duplicates,
         "missing_fields": missing,
         "unexpected_fields": unexpected,
+        "invalid_values": invalid_values,
     }
 
 
