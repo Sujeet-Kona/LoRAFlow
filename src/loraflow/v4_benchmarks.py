@@ -156,13 +156,9 @@ def infer_severity_from_note(note, track, split):
     for dimension, keys in dimensions.items():
         matches = [key for key in keys if cues[key] in note]
         if len(matches) != 1:
-            raise ValueError(
-                f"Expected exactly one {dimension} cue for {split}, found {matches}"
-            )
+            raise ValueError(f"Expected exactly one {dimension} cue for {split}, found {matches}")
         observed[dimension] = matches[0]
-    return derive_severity(
-        observed["systemic"], observed["function"], observed["trajectory"]
-    )
+    return derive_severity(observed["systemic"], observed["function"], observed["trajectory"])
 
 
 def allowed_concepts(track, split, category):
