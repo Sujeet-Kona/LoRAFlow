@@ -122,13 +122,20 @@ functional, and trajectory attributes using an explicit policy function; action 
 severity-to-action mapping. The labels are therefore not selected first and then encoded in a
 single severity phrase.
 
-The generator writes v2 data to `data/v2/` by default, preserving the original v1 files for
-audit/reproduction. Train, validation, and test use separate wording/frame families with
-deterministic seeds and a shared exact-note uniqueness set. This is a synthetic engineering
-fixture, not veterinary guidance, a clinical decision system, or a substitute for real-world
-evaluation. The audit and nearest-neighbour baselines remain mandatory: split-specific frames
-alone do not prove semantic generalization. No v2 model-quality claim is made until the new
-corpus has been regenerated, audited, and evaluated against non-neural baselines.
+The generator writes v3 data to `data/v3/` by default, preserving the original v1 and v2
+files for audit/reproduction. Each category has five symptom concepts: three are available
+only to training, one only to validation, and one only to test. This is a concept-held-out
+benchmark, not merely a sentence-template split. A generated `manifest.json` records the
+concept allocation and policy. Run `scripts/audit_dataset.py` with
+`--manifest data/v3/manifest.json` to enforce concept disjointness, category-to-concept
+consistency, action-to-severity consistency, and to report 1-nearest-neighbour and per-field
+majority baselines. Severity is derived from independently sampled systemic, functional, and
+trajectory attributes; action follows the explicit severity policy. The corpus remains a
+synthetic engineering fixture, not veterinary guidance or a clinical decision system. Five
+concepts per category and one held-out concept per category are still a small benchmark;
+passing this audit does not establish broad natural-language generalization. No v3 model-quality
+claim is made until the generated corpus is audited and evaluated against the reported
+non-neural baselines.
 
 Use real instruction-tuning JSONL with the configured instruction and output fields, plus an
 optional input field. Plain-text-only records are not supported for supervised instruction tuning.
