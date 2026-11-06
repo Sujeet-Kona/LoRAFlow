@@ -8,8 +8,10 @@ than swallowed, because a silently missing run is worse than a loud one.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +20,19 @@ from loraflow.config import AppConfig
 LOGGER = logging.getLogger("loraflow.tracking")
 
 _MAX_PARAM_CHARS = 250
+_MLFLOW_KEY_PATTERN = re.compile(r"[^A-Za-z0-9_.:/ -]+")
+
+
+def _safe_mlflow_key(key: str) -> str:
+    """Return a deterministic MLflow-compatible key for arbitrary report labels."""
+
+    cleaned = _MLFLOW_KEY_PATTERN.sub("_", key).strip(" _")
+    if not cleaned:
+        cleaned = "unnamed"
+    if cleaned != key or len(cleaned) > _MAX_PARAM_CHARS:
+        suffix = hashlib.sha1(key.encode("utf-8")).hexdigest()[:8]
+        cleaned = f"{cleaned[: _MAX_PARAM_CHARS - len(suffix) - 1]}_{suffix}"
+    return cleaned
 
 
 def flatten(prefix: str, payload: Any, out: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -122,6 +137,7 @@ class MLflowTracker:
         self.config = config
         self.tags = dict(tags or {})
         self._run: Any = None
+        self._last_run_id: str | None = None
         self._owns_run = False
 
         tracking_uri = os.environ.get("LORAFLOW_MLFLOW_TRACKING_URI", config.tracking.tracking_uri)
@@ -172,6 +188,7 @@ class MLflowTracker:
             run_name=run_name or self.config.tracking.run_name,
         )
         self._owns_run = True
+        self._last_run_id = self._run.info.run_id
         if self.tags:
             self._mlflow.set_tags(self.tags)
         LOGGER.info(
@@ -182,7 +199,8 @@ class MLflowTracker:
 
     @property
     def run_id(self) -> str | None:
-        return self._run.info.run_id if self._run is not None else None
+        # Keep the completed run identifier available to the CLI after finish().
+        return self._run.info.run_id if self._run is not None else self._last_run_id
 
     def log_run(self, config: AppConfig, *, extra: dict[str, Any] | None = None) -> None:
         self.start()
@@ -244,8 +262,12 @@ class MLflowTracker:
 
     def _log_flat(self, payload: dict[str, Any], *, prefix: str = "") -> None:
         flat = flatten(prefix, payload)
-        metrics = _metrics_only(flat)
-        params = {key: value for key, value in flat.items() if key not in metrics}
+        # Report labels are data, not MLflow identifiers. Model outputs may
+        # contain arbitrary Unicode/punctuation, so sanitize every key first.
+        # A hash suffix prevents distinct labels collapsing to one name.
+        safe_flat = {_safe_mlflow_key(key): value for key, value in flat.items()}
+        metrics = _metrics_only(safe_flat)
+        params = {key: value for key, value in safe_flat.items() if key not in metrics}
         # MLflow 3.x has no fluent log_batch, so use the two dedicated calls.
         if params:
             self._mlflow.log_params(

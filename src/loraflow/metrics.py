@@ -255,10 +255,13 @@ def structured_output_scores(predictions: Sequence[str]) -> dict[str, Any]:
             if value is not None and value not in FIELD_LABELS[key]:
                 invalid_values.setdefault(key, {})
                 invalid_values[key][value] = invalid_values[key].get(value, 0) + 1
+        strict_candidate = prediction.strip()
+        if strict_candidate.lower().startswith("### response:"):
+            strict_candidate = strict_candidate[len("### Response:") :].strip()
         if (
             set(fields) == set(EXPECTED_FIELDS)
             and len(keys) == len(EXPECTED_FIELDS)
-            and expected_pattern.fullmatch(prediction.strip().lower())
+            and expected_pattern.fullmatch(strict_candidate)
         ):
             valid += 1
     total = len(predictions)

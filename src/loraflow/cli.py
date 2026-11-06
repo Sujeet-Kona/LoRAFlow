@@ -138,9 +138,30 @@ def command_evaluate(args: argparse.Namespace) -> int:
         config.evaluation.generation_examples = args.generation_examples
     tracker = _tracker(config, no_track=args.no_track, tags={"stage": "evaluate"})
     report = evaluate_config(config, adapter_dir=args.adapter, tracker=tracker)
+    classical = report.get("classical_baseline")
+    classical_summary = None
+    if classical is not None:
+        classical_summary = {
+            "model": classical["model"],
+            "test_examples": classical["test_examples"],
+            "exact_match": classical["exact_match"],
+            "valid_rate": classical["structured_output"]["valid_rate"],
+            "fields": {
+                name: {
+                    "accuracy": metrics["accuracy"],
+                    "macro_f1": metrics["macro_f1"],
+                }
+                for name, metrics in classical["per_field"].items()
+            },
+        }
     print(
         json.dumps(
-            {"delta": report["delta"], "report": str(config.evaluation.output_file)}, indent=2
+            {
+                "delta": report["delta"],
+                "classical_baseline": classical_summary,
+                "report": str(config.evaluation.output_file),
+            },
+            indent=2,
         )
     )
     return 0
@@ -249,7 +270,7 @@ def build_parser() -> argparse.ArgumentParser:
     train.set_defaults(func=command_train)
 
     evaluate = subparsers.add_parser(
-        "evaluate", parents=[common], help="Compare base model and adapter"
+        "evaluate", parents=[common], help="Compare base model, adapter and classical baseline"
     )
     evaluate.add_argument("--adapter", help="Adapter directory (defaults to the run's)")
     evaluate.add_argument("--max-examples", type=int)

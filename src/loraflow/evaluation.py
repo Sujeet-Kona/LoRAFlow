@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import platform
+import re
 from pathlib import Path
 from typing import Any
 
@@ -18,11 +19,19 @@ import torch
 import transformers
 from transformers import AutoModelForCausalLM
 
+from loraflow.baselines import evaluate_tfidf_baseline
 from loraflow.config import AppConfig, config_sha256
-from loraflow.data import Example, dataset_report, file_identity, load_examples
+from loraflow.data import (
+    Example,
+    dataset_report,
+    deduplicate,
+    file_identity,
+    load_examples,
+)
 from loraflow.metrics import (
     classification_scores,
     format_delta,
+    parse_fields,
     perplexity_from_loss,
     score_generations,
     structured_output_scores,
@@ -55,6 +64,18 @@ _COMPARED = (
     ("exact_match", True),
     ("prefix_match", True),
 )
+
+
+def _extract_generated_answer(text: str) -> str:
+    """Remove a leading response header and truncate only later section headers."""
+
+    cleaned = text.strip()
+    if cleaned.lower().startswith("### response:"):
+        cleaned = cleaned[len("### Response:") :].lstrip()
+    next_section = re.search(r"(?m)^###\s+(?:instruction|input|response):", cleaned, re.IGNORECASE)
+    if next_section:
+        cleaned = cleaned[: next_section.start()]
+    return cleaned.strip()
 
 
 def _common_prefix_length(left: list[int], right: list[int]) -> int:
@@ -234,9 +255,9 @@ def generate_answers(
             new_tokens = outputs[:, encoded["input_ids"].size(1) :]
             for row in range(new_tokens.size(0)):
                 text = tokenizer.decode(new_tokens[row], skip_special_tokens=True)
-                # Cut at the next section header in case the model continues
-                # past its own answer into a fabricated "### Input:" block.
-                generations.append(text.split("###")[0].strip())
+                # Preserve a leading response header; only later section headers
+                # mark the end of the generated answer.
+                generations.append(_extract_generated_answer(text))
     finally:
         tokenizer.padding_side = previous_side
     return generations
@@ -369,6 +390,29 @@ def evaluate_config(
     del fine_tuned_model
     _free_memory(device)
 
+    # The classical baseline uses only raw training observations as features.
+    # Its fixed hyperparameters are not selected against the held-out test set.
+    classical_baseline = None
+    if config.data.test_file is not None:
+        train_examples = deduplicate(
+            load_examples(
+                config.data.train_file,
+                instruction_field=config.data.instruction_field,
+                input_field=config.data.input_field,
+                output_field=config.data.output_field,
+                template=config.data.prompt_template,
+                max_records=config.data.max_train_examples,
+            )
+        )
+        structured = all(
+            {"sev", "cat"} <= set(parse_fields(example.completion))
+            for example in train_examples + held_out
+        )
+        if structured:
+            classical_baseline = evaluate_tfidf_baseline(
+                train_examples, held_out, seed=config.training.seed
+            )
+
     delta = {
         key: format_delta(baseline[key], fine_tuned[key])
         for key, _ in _COMPARED
@@ -409,6 +453,7 @@ def evaluate_config(
         "generation_examples": len(gen_examples),
         "baseline": baseline,
         "fine_tuned": fine_tuned,
+        "classical_baseline": classical_baseline,
         "delta": delta,
         "field_accuracy": {
             name: {

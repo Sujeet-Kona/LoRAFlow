@@ -168,3 +168,19 @@ def test_format_delta_shows_both_ends() -> None:
 def test_token_accuracy_rejects_mismatched_lengths() -> None:
     with pytest.raises(ValueError):
         token_accuracy([1, 2], [-100])
+
+
+def test_out_of_vocabulary_category_is_invalid_not_a_valid_label() -> None:
+    from loraflow.metrics import classification_scores, structured_output_scores
+
+    prediction = "sev=watch cat=咳嗽 act=recheck_12h"
+    gold = "sev=watch cat=behaviour act=recheck_12h"
+
+    validity = structured_output_scores([prediction])
+    classification = classification_scores([prediction], [gold])
+
+    assert validity["valid"] == 0
+    assert validity["malformed"] == 1
+    assert validity["invalid_values"]["cat"]["咳嗽"] == 1
+    assert classification["cat"]["accuracy"] == 0.0
+    assert classification["cat"]["confusion_matrix"]["behaviour"]["__invalid__"] == 1

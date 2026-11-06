@@ -16,6 +16,7 @@ from loraflow.config import AppConfig, DataConfig, EvaluationConfig, TrainingCon
 from loraflow.data import format_record  # noqa: E402
 from loraflow.evaluation import (  # noqa: E402
     IGNORE_INDEX,
+    _extract_generated_answer,
     _free_memory,
     _note_text,
     evaluate_config,
@@ -110,3 +111,26 @@ def test_free_memory_clears_cache_when_mps_is_available(
     _free_memory("mps")
 
     assert calls == [True]
+
+
+def test_generated_answer_preserves_leading_response_header() -> None:
+    assert (
+        _extract_generated_answer(
+            "### Response:\nsev=watch cat=skin act=recheck_12h\n### Input:\nextra"
+        )
+        == "sev=watch cat=skin act=recheck_12h"
+    )
+
+
+def test_generated_answer_truncates_only_later_section_headers() -> None:
+    assert (
+        _extract_generated_answer("sev=watch cat=skin act=recheck_12h\n### Input:\nextra")
+        == "sev=watch cat=skin act=recheck_12h"
+    )
+
+
+def test_structured_output_accepts_leading_response_header() -> None:
+    from loraflow.metrics import structured_output_scores
+
+    result = structured_output_scores(["### Response:\nsev=watch cat=skin act=recheck_12h"])
+    assert result["valid"] == 1

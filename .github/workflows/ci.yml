@@ -23,6 +23,8 @@ jobs:
       - run: pip install ".[dev]"
       - run: ruff check src tests scripts
       - run: ruff format --check src tests scripts
+      - run: bash -n scripts/smoke_prompt_v2_serving.sh
+      - run: bash -n scripts/run_prompt_v2_experiments.sh
 
   unit:
     runs-on: ubuntu-latest

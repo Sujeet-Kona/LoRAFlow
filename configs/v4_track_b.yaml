@@ -1,0 +1,57 @@
+data:
+  train_file: data/v4/track_b/train.jsonl
+  validation_file: data/v4/track_b/validation.jsonl
+  test_file: data/v4/track_b/test.jsonl
+  max_seq_length: 256
+
+lora:
+  rank: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: [q_proj, v_proj]
+
+training:
+  base_model: Qwen/Qwen2.5-0.5B
+  output_dir: artifacts/v4-track-b-run
+  num_train_epochs: 3
+  max_steps: -1
+  learning_rate: 0.0002
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4
+  eval_steps: 15
+  save_steps: 15
+  logging_steps: 5
+  seed: 42
+  device: auto
+  dtype: auto
+  warmup_steps: 0
+  weight_decay: 0.0
+  lr_scheduler: linear
+  eval_batch_size: 4
+  gradient_checkpointing: false
+  run_name: v4-track-b
+
+evaluation:
+  output_file: artifacts/v4-track-b-run/evaluation_report.json
+  max_examples: 0
+  generation_examples: 150
+  max_new_tokens: 24
+  do_sample: false
+  temperature: 1.0
+  top_p: 1.0
+  batch_size: 4
+
+tracking:
+  enabled: true
+  tracking_uri: sqlite:///mlflow.db
+  artifacts_dir: file://./mlartifacts
+  experiment_name: loraflow-v4-controlled
+  run_name: v4-track-b
+  log_artifacts: true
+
+export:
+  output_dir: artifacts/v4-track-b-exported
+  merge_and_save: false
+  merged_dir: artifacts/v4-track-b-merged
+  save_dtype: same
+  verify_reload: true

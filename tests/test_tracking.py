@@ -54,3 +54,34 @@ def test_mlflow_tracker_logs_export_metadata_and_manifest(tmp_path: Path, monkey
     assert calls["payload"] == report
     assert calls["prefix"] == "export"
     assert calls["manifest"] == manifest
+
+
+def test_mlflow_run_id_survives_finish() -> None:
+    tracker = object.__new__(MLflowTracker)
+    tracker._run = None
+    tracker._last_run_id = "completed-run-id"
+
+    assert tracker.run_id == "completed-run-id"
+
+
+def test_mlflow_keys_sanitize_unicode_and_punctuation() -> None:
+    from loraflow.tracking import _safe_mlflow_key
+
+    original = "eval.fine_tuned.structured_output.invalid_values.cat.呼吸相关+不明+嘘气_now_action=flag_vet_now_no_action_re"
+    sanitized = _safe_mlflow_key(original)
+
+    assert sanitized.isascii()
+    assert all(char.isalnum() or char in "_.:/ -" for char in sanitized)
+    assert sanitized.endswith(
+        "_" + __import__("hashlib").sha1(original.encode("utf-8")).hexdigest()[:8]
+    )
+    assert _safe_mlflow_key(original) == sanitized
+
+
+def test_distinct_unicode_mlflow_keys_do_not_collapse() -> None:
+    from loraflow.tracking import _safe_mlflow_key
+
+    first = _safe_mlflow_key("eval.invalid_values.cat.呼吸")
+    second = _safe_mlflow_key("eval.invalid_values.cat.咳嗽")
+
+    assert first != second
