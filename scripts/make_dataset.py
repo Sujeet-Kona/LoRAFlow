@@ -140,9 +140,12 @@ ANIMAL_IDS = tuple(f"A{i:03d}" for i in range(1, 241))
 MAX_UNIQUE_NOTES = (
     len(ANIMAL_IDS)
     * sum(len(values) for values in SYMPTOMS.values())
-    * 2  # two paraphrases for each of the three independently sampled attributes
-    * 2
-    * 2
+    * len(SYSTEMIC_STATES)
+    * 2  # two paraphrases per systemic state
+    * len(FUNCTION_STATES)
+    * 2  # two paraphrases per functional state
+    * len(TRAJECTORY_STATES)
+    * 2  # two paraphrases per trajectory state
 )
 
 
