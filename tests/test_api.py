@@ -237,3 +237,16 @@ def test_response_carries_processing_time_header() -> None:
 
 def test_unknown_route_is_404() -> None:
     assert client_for(FakeService()).get("/does-not-exist").status_code == 404
+
+
+def test_prompt_token_limit_rejects_truncation() -> None:
+    from loraflow.api import _validate_prompt_token_length
+
+    with pytest.raises(ValueError, match="above the configured max_seq_length"):
+        _validate_prompt_token_length(257, 256)
+
+
+def test_prompt_token_limit_accepts_exact_boundary() -> None:
+    from loraflow.api import _validate_prompt_token_length
+
+    _validate_prompt_token_length(256, 256)
