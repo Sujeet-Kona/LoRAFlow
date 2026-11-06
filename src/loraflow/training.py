@@ -135,21 +135,17 @@ def load_tokenizer(model_name: str, *, trust_remote_code: bool = False) -> AutoT
     return tokenizer
 
 
-def validate_examples_fit(
-    tokenizer: Any, examples: list[Example], *, max_length: int
-) -> None:
+def validate_examples_fit(tokenizer: Any, examples: list[Example], *, max_length: int) -> None:
     """Reject examples that TRL would silently truncate during SFT preprocessing."""
 
     prompts = tokenizer([example.prompt for example in examples], add_special_tokens=False)[
         "input_ids"
     ]
-    completions = tokenizer(
-        [example.completion for example in examples], add_special_tokens=False
-    )["input_ids"]
+    completions = tokenizer([example.completion for example in examples], add_special_tokens=False)[
+        "input_ids"
+    ]
     eos_id = tokenizer.eos_token_id
-    for example, prompt_ids, completion_ids in zip(
-        examples, prompts, completions, strict=True
-    ):
+    for example, prompt_ids, completion_ids in zip(examples, prompts, completions, strict=True):
         total = len(prompt_ids) + len(completion_ids)
         if eos_id is not None and (not completion_ids or completion_ids[-1] != eos_id):
             total += 1  # TRL appends EOS to the completion.
