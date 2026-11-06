@@ -5,6 +5,28 @@ from pathlib import Path
 from loraflow.tracking import MLflowTracker, NoopTracker
 
 
+def test_new_structured_metrics_are_logged_as_metrics() -> None:
+    from loraflow.tracking import _metrics_only
+
+    metrics = _metrics_only(
+        {
+            "eval.fine_tuned.per_field.sev.macro_f1": 0.75,
+            "eval.fine_tuned.per_field.sev.per_class.watch.precision": 0.8,
+            "eval.fine_tuned.per_field.sev.per_class.watch.recall": 0.7,
+            "eval.fine_tuned.structured_output.valid": 18,
+            "eval.fine_tuned.structured_output.malformed": 6,
+        }
+    )
+
+    assert metrics == {
+        "eval.fine_tuned.per_field.sev.macro_f1": 0.75,
+        "eval.fine_tuned.per_field.sev.per_class.watch.precision": 0.8,
+        "eval.fine_tuned.per_field.sev.per_class.watch.recall": 0.7,
+        "eval.fine_tuned.structured_output.valid": 18.0,
+        "eval.fine_tuned.structured_output.malformed": 6.0,
+    }
+
+
 def test_noop_tracker_accepts_export_reports() -> None:
     NoopTracker().log_export({"kind": "adapter", "path": "unused"})
 
