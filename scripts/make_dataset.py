@@ -166,16 +166,22 @@ def main() -> None:
     parser.add_argument("--out-dir", type=Path, default=Path("data"))
     parser.add_argument("--train", type=int, default=480)
     parser.add_argument("--validation", type=int, default=120)
+    parser.add_argument("--test", type=int, default=120)
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()
 
     train = make_records(args.train, seed=args.seed)
-    # Different seed keeps the held-out notes disjoint from training notes.
+    # Separate seeds keep exact notes disjoint across the three partitions.
     validation = make_records(args.validation, seed=args.seed + 1)
+    test = make_records(args.test, seed=args.seed + 2)
 
     write_jsonl(args.out_dir / "train.jsonl", train)
     write_jsonl(args.out_dir / "validation.jsonl", validation)
-    print(f"wrote {len(train)} train + {len(validation)} validation records to {args.out_dir}")
+    write_jsonl(args.out_dir / "test.jsonl", test)
+    print(
+        f"wrote {len(train)} train + {len(validation)} validation + "
+        f"{len(test)} test records to {args.out_dir}"
+    )
 
 
 if __name__ == "__main__":
