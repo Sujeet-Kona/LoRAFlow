@@ -41,12 +41,34 @@ def _tracker(config: AppConfig, *, no_track: bool, tags: dict[str, str]) -> Any:
 
 
 def command_data_check(args: argparse.Namespace) -> int:
-    from loraflow.data import dataset_report
+    from loraflow.data import dataset_report, deduplicate, load_examples, split_examples
 
     config = load_config(args.config)
-    from loraflow.training import prepare_splits
-
-    train, validation = prepare_splits(config)
+    data = config.data
+    train = deduplicate(
+        load_examples(
+            data.train_file,
+            instruction_field=data.instruction_field,
+            input_field=data.input_field,
+            output_field=data.output_field,
+            template=data.prompt_template,
+            max_records=data.max_train_examples,
+        )
+    )
+    if data.validation_file is not None:
+        validation = load_examples(
+            data.validation_file,
+            instruction_field=data.instruction_field,
+            input_field=data.input_field,
+            output_field=data.output_field,
+            template=data.prompt_template,
+        )
+    else:
+        train, validation = split_examples(
+            train,
+            validation_size=data.validation_size,
+            seed=config.training.seed,
+        )
     payload = {
         "config": str(config.data.train_file),
         "train": dataset_report(train),
