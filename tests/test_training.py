@@ -30,6 +30,7 @@ from loraflow.training import (  # noqa: E402
     count_adapter_parameters,
     prepare_splits,
     to_hf_dataset,
+    validate_examples_fit,
 )
 
 
@@ -237,3 +238,29 @@ def test_count_adapter_parameters_sees_only_lora_tensors() -> None:
             return iter([frozen, adapter])
 
     assert count_adapter_parameters(Fake()) == (4, 13)
+
+
+class FakeTokenizer:
+    eos_token_id = 99
+
+    def __call__(self, texts, *, add_special_tokens=False):
+        return {"input_ids": [list(range(len(text.split()))) for text in texts]}
+
+
+def test_training_rejects_examples_that_would_be_truncated() -> None:
+    example = format_record(
+        {"instruction": "Label", "input": "note", "output": "urgent response"},
+        line_number=12,
+    )
+
+    with pytest.raises(ValueError, match="source line 12.*max_seq_length=3"):
+        validate_examples_fit(FakeTokenizer(), [example], max_length=3)
+
+
+def test_training_accepts_examples_at_the_eos_inclusive_limit() -> None:
+    example = format_record(
+        {"instruction": "Label", "input": "note", "output": "urgent response"},
+        line_number=1,
+    )
+
+    validate_examples_fit(FakeTokenizer(), [example], max_length=10)
