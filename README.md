@@ -220,9 +220,10 @@ artifact existence assertions, `evaluate` with report-completeness assertions, `
 `serve` check that curls `/health`, `/generate`, `/metrics` and asserts the 422 path.
 
 **Verification status of this section:** Docker is not installed on the development machine, so the
-image was never built and the compose stack never started; the Dockerfile and compose file are
-unexecuted configuration, and the workflow has not run on GitHub Actions either. Every command the
-pipeline job runs *was* executed locally from the current tree, in order, against
+image was never built and the compose stack never started. CI validates the Compose configuration
+syntax, but the image build and live container stack remain unverified. CI is configured to run the
+full smoke pipeline; a completed green hosted run is required before claiming that path is verified.
+Every command the pipeline job runs *was* executed locally from the current tree, in order, against
 `configs/ci_smoke.yaml`: `make_dataset.py` (regenerated both files with byte-identical sha256 sums),
 `data-check`, `train`, `evaluate`, and `export` — all exit 0, with `training_metadata.json`,
 `evaluation_report.json` and `exported/adapter/export_manifest.json` on disk. On that config the tiny
