@@ -34,3 +34,9 @@ For each seed and as mean, sample standard deviation, minimum, and maximum acros
 The same fixed held-out examples are used for every seed. The seed-level standard deviation is a descriptive measure of training-seed sensitivity; the script deliberately does not report a confidence interval or treat examples as independent training runs. The test set is not used for checkpoint selection or hyperparameter tuning.
 
 This remains a small synthetic benchmark. Multi-seed stability does not establish broad natural-language generalization, veterinary utility, or clinical safety. The sweep is a local research workflow and is not run in CI because it downloads model weights and performs multiple full training runs.
+
+## Dataset label-consistency audit
+
+The v4 benchmark audit now reconstructs severity from the three explicit input cue dimensions (systemic condition, functional ability, and trajectory) using the benchmark's declared rule, then checks that the target severity agrees. It requires exactly one cue from each dimension and uses the correct split-specific wording (Track A intentionally shares the training wording). Regression tests cover a corrupted severity target, a missing cue, and valid split-specific wording.
+
+This is a **generator-rule consistency check**, not an independent semantic or clinical assessment: the same declared rule defines both the generated target and the audit expectation. It can catch corrupted labels and malformed cue construction, but it cannot prove that the rule itself is a valid interpretation of an animal observation. The stratified severity quotas also intentionally alter the natural frequency of routine/watch/urgent cases; the benchmark is not a prevalence estimate.
