@@ -1,0 +1,60 @@
+services:
+  api:
+    build: .
+    image: loraflow:local
+    ports:
+      - "8000:8000"
+    environment:
+      LORAFLOW_CONFIG: configs/train.yaml
+      HF_HOME: /data/huggingface
+      # CPU threads: leave unset to let torch decide on the host.
+      TORCH_NUM_THREADS: "4"
+    volumes:
+      - hf-cache:/data/huggingface
+      - ./artifacts:/app/artifacts
+      - ./data:/app/data
+    command: ["loraflow", "serve", "--config", "configs/train.yaml", "--host", "0.0.0.0", "--port", "8000"]
+
+  # One-shot pipeline stages. Use `docker compose run --rm train`.
+  train:
+    image: loraflow:local
+    profiles: ["pipeline"]
+    volumes:
+      - hf-cache:/data/huggingface
+      - ./artifacts:/app/artifacts
+      - ./data:/app/data
+    command: ["loraflow", "train", "--config", "configs/train.yaml"]
+
+  evaluate:
+    image: loraflow:local
+    profiles: ["pipeline"]
+    volumes:
+      - hf-cache:/data/huggingface
+      - ./artifacts:/app/artifacts
+      - ./data:/app/data
+    command: ["loraflow", "evaluate", "--config", "configs/train.yaml"]
+
+  export:
+    image: loraflow:local
+    profiles: ["pipeline"]
+    volumes:
+      - hf-cache:/data/huggingface
+      - ./artifacts:/app/artifacts
+    command: ["loraflow", "export", "--config", "configs/train.yaml"]
+
+  mlflow:
+    image: mlflow/mlflow:3.18.0
+    profiles: ["tracking"]
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlflow.db:/mlflow.db
+      - ./mlartifacts:/mlartifacts
+    # Both paths must match what the container writes, or runs land in a store
+    # the UI is not showing.
+    command: ["mlflow", "ui", "--host", "0.0.0.0", "--port", "5000",
+              "--backend-store-uri", "sqlite:////mlflow.db",
+              "--default-artifact-root", "file:///mlartifacts"]
+
+volumes:
+  hf-cache:

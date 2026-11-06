@@ -1,0 +1,36 @@
+data:
+  train_file: data/train.jsonl
+  validation_file: data/validation.jsonl
+  max_seq_length: 256
+  max_train_examples: 32
+
+lora:
+  rank: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: [q_proj, v_proj]
+
+training:
+  base_model: Qwen/Qwen2.5-0.5B
+  output_dir: artifacts/smoke-run
+  num_train_epochs: 1
+  max_steps: 2
+  learning_rate: 0.0002
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 1
+  eval_steps: 1
+  logging_steps: 1
+  save_steps: 1
+  seed: 42
+  device: auto
+  dtype: auto
+  run_name: smoke
+
+evaluation:
+  output_file: artifacts/smoke-run/evaluation_report.json
+  max_examples: 4
+  generation_examples: 2
+  max_new_tokens: 16
+
+tracking:
+  enabled: false

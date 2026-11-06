@@ -2,7 +2,16 @@ data:
   train_file: data/train.jsonl
   validation_file: data/validation.jsonl
   text_field: text
-  max_seq_length: 1024
+  max_seq_length: 256
+
+  instruction_field: instruction
+  input_field: input
+  output_field: output
+  # {input_block} expands to an "### Input:" section only when a record has an
+  # input field, so single-field datasets stay tidy.
+  prompt_template: "### Instruction:\n{instruction}\n{input_block}### Response:\n"
+  # Used only when validation_file is absent.
+  validation_size: 0.1
 
 lora:
   rank: 8
@@ -15,8 +24,60 @@ lora:
 training:
   base_model: Qwen/Qwen2.5-0.5B
   output_dir: artifacts/default-run
-  num_train_epochs: 1
+  num_train_epochs: 3
+  max_steps: -1
   learning_rate: 0.0002
-  per_device_train_batch_size: 1
+  per_device_train_batch_size: 4
   gradient_accumulation_steps: 4
   seed: 42
+  # auto resolves to CUDA, then Apple MPS, then CPU. Requesting an accelerator
+  # that is not present raises instead of quietly moving.
+  device: auto
+  # auto is bf16 on CUDA and fp32 on MPS/CPU; fp16 training on the Mac path is
+  # deliberately not the default.
+  dtype: auto
+  warmup_steps: 0
+  weight_decay: 0.0
+  lr_scheduler: linear
+  logging_steps: 5
+  save_steps: 500
+  eval_steps: 15
+  eval_batch_size: 4
+  gradient_checkpointing: false
+  run_name: default-run
+
+evaluation:
+  output_file: artifacts/default-run/evaluation_report.json
+  max_examples: 120
+  generation_examples: 24
+  max_new_tokens: 24
+  # Greedy by default so baseline and fine-tuned runs are comparable.
+  do_sample: false
+  temperature: 1.0
+  top_p: 1.0
+  batch_size: 4
+
+tracking:
+  enabled: true
+  # MLflow 3.x keeps the plain filesystem store in maintenance mode.
+  tracking_uri: sqlite:///mlflow.db
+  artifacts_dir: file://./mlartifacts
+  experiment_name: loraflow
+  run_name: null
+  log_artifacts: true
+
+export:
+  output_dir: artifacts/exported
+  merge_and_save: false
+  merged_dir: artifacts/merged
+  save_dtype: same
+  verify_reload: true
+
+serving:
+  host: 127.0.0.1
+  port: 8000
+  device: auto
+  max_new_tokens: 64
+  max_input_chars: 4000
+  max_concurrent_requests: 2
+  log_level: INFO
