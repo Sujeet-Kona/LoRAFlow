@@ -60,7 +60,9 @@ def audit_report(report: dict[str, Any], report_name: str = "<memory>") -> dict[
         stats["n"] += 1
         stats["category_correct"] += predicted.get("cat") == gold.get("cat")
         stats["severity_correct"] += predicted.get("sev") == gold.get("sev")
-        stats["exact_match"] += all(predicted.get(key) == gold.get(key) for key in ("sev", "cat", "act"))
+        stats["exact_match"] += all(
+            predicted.get(key) == gold.get(key) for key in ("sev", "cat", "act")
+        )
         stats["predicted_categories"][predicted.get("cat", "<missing>")] += 1
         stats["predicted_severities"][predicted.get("sev", "<missing>")] += 1
 
