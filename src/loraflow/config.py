@@ -52,9 +52,7 @@ class LoRAConfig(BaseModel):
     rank: PositiveInt = 8
     alpha: PositiveInt = 16
     dropout: float = Field(default=0.05, ge=0.0, lt=1.0)
-    target_modules: list[str] = Field(
-        default_factory=lambda: ["q_proj", "v_proj"], min_length=1
-    )
+    target_modules: list[str] = Field(default_factory=lambda: ["q_proj", "v_proj"], min_length=1)
 
 
 class TrainingConfig(BaseModel):
