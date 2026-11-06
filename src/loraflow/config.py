@@ -171,7 +171,5 @@ def config_sha256(config: AppConfig) -> str:
     one config spelled out the default and the other inherited it.
     """
 
-    canonical = json.dumps(
-        config.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
-    )
+    canonical = json.dumps(config.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
