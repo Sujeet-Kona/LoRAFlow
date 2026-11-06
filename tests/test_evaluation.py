@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pytest
+import torch
 
 pytest.importorskip("torch")
 pytest.importorskip("peft")
@@ -18,6 +19,7 @@ from loraflow.evaluation import (
     IGNORE_INDEX,
     _answer_labels,
     _build_scoring_row,
+    _free_memory,
     _note_text,
     evaluate_config,
 )  # noqa: E402
@@ -95,3 +97,27 @@ def test_evaluate_rejects_negative_generation_count(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="cannot be negative"):
         evaluate_config(config, adapter_dir=adapter)
+
+
+
+def test_free_memory_does_not_call_mps_without_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
+
+    def unexpected_empty_cache() -> None:
+        pytest.fail("MPS cache cleanup must not run when MPS is unavailable")
+
+    monkeypatch.setattr(torch.mps, "empty_cache", unexpected_empty_cache)
+
+    _free_memory("cpu")
+
+
+def test_free_memory_clears_cache_when_mps_is_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[bool] = []
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: True)
+    monkeypatch.setattr(torch.mps, "empty_cache", lambda: calls.append(True))
+
+    _free_memory("mps")
+
+    assert calls == [True]
