@@ -18,8 +18,16 @@ from peft import LoraConfig, TaskType
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl import SFTConfig, SFTTrainer
 
-from loraflow.config import AppConfig
-from loraflow.data import Example, dataset_report, deduplicate, load_examples, split_examples
+from loraflow.config import AppConfig, config_sha256
+from loraflow.data import (
+    Example,
+    dataset_provenance,
+    dataset_report,
+    deduplicate,
+    file_identity,
+    load_examples,
+    split_examples,
+)
 from loraflow.runtime import (
     cpu_threads,
     resolve_device,
@@ -305,6 +313,11 @@ def run_training(
 
     metadata: dict[str, Any] = {
         "created_at_utc": timestamp(),
+        "config_sha256": config_sha256(config),
+        "dataset_provenance": {
+            **dataset_provenance(config.data.train_file, config.data.validation_file),
+            "test": file_identity(config.data.test_file) if config.data.test_file else None,
+        },
         "run_name": sft_config.run_name,
         "base_model": config.training.base_model,
         "device": device,
