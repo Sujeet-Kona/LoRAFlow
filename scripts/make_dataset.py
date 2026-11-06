@@ -78,62 +78,144 @@ TRAJECTORY_STATES = ("improving", "stable", "worsening")
 
 SYSTEMIC_TEXT = {
     "train": {
-        "normal": ("temperature and alertness are within the usual range", "no general change is observed"),
-        "mild": ("there is a mild change in general condition", "the animal seems slightly dull"),
-        "critical": ("the animal is markedly dull and has a very high temperature", "there is a severe change in general condition"),
+        "normal": (
+            "temperature and alertness are within the usual range",
+            "no general change is observed",
+        ),
+        "mild": (
+            "there is a mild change in general condition",
+            "the animal seems slightly dull",
+        ),
+        "critical": (
+            "the animal is markedly dull and has a very high temperature",
+            "there is a severe change in general condition",
+        ),
     },
     "validation": {
-        "normal": ("general observations remain unremarkable", "alertness and temperature appear usual"),
-        "mild": ("the overall condition is somewhat reduced", "the observer notes a small general change"),
-        "critical": ("the animal is difficult to rouse and feels extremely hot", "the general condition is severely compromised"),
+        "normal": (
+            "general observations remain unremarkable",
+            "alertness and temperature appear usual",
+        ),
+        "mild": (
+            "the overall condition is somewhat reduced",
+            "the observer notes a small general change",
+        ),
+        "critical": (
+            "the animal is difficult to rouse and feels extremely hot",
+            "the general condition is severely compromised",
+        ),
     },
     "test": {
-        "normal": ("no broader abnormality was noticed", "the general check did not raise concern"),
-        "mild": ("the wider check suggests a modest change", "the animal is a little less responsive overall"),
-        "critical": ("the animal barely responds and is extremely hot", "the wider check indicates a major systemic problem"),
+        "normal": (
+            "no broader abnormality was noticed",
+            "the general check did not raise concern",
+        ),
+        "mild": (
+            "the wider check suggests a modest change",
+            "the animal is a little less responsive overall",
+        ),
+        "critical": (
+            "the animal barely responds and is extremely hot",
+            "the wider check indicates a major systemic problem",
+        ),
     },
 }
 
 FUNCTION_TEXT = {
     "train": {
-        "normal": ("it can carry out its usual activities", "normal function is maintained"),
-        "limited": ("some usual activities are now difficult", "its normal activity is reduced"),
-        "failed": ("it cannot perform a basic usual activity", "it is unable to carry out a normal function"),
+        "normal": (
+            "it can carry out its usual activities",
+            "normal function is maintained",
+        ),
+        "limited": (
+            "some usual activities are now difficult",
+            "its normal activity is reduced",
+        ),
+        "failed": (
+            "it cannot perform a basic usual activity",
+            "it is unable to carry out a normal function",
+        ),
     },
     "validation": {
-        "normal": ("usual activity remains possible", "it continues to function normally"),
-        "limited": ("it manages only part of its usual activity", "ordinary movement or activity is restricted"),
-        "failed": ("it cannot complete a basic activity", "a normal function has been lost"),
+        "normal": (
+            "usual activity remains possible",
+            "it continues to function normally",
+        ),
+        "limited": (
+            "it manages only part of its usual activity",
+            "ordinary movement or activity is restricted",
+        ),
+        "failed": (
+            "it cannot complete a basic activity",
+            "a normal function has been lost",
+        ),
     },
     "test": {
-        "normal": ("there is no limitation in its usual activity", "it remains able to do what it normally does"),
-        "limited": ("its ordinary activity is noticeably restricted", "it struggles with part of its usual routine"),
-        "failed": ("it is unable to complete an essential activity", "it has lost the ability to perform a basic function"),
+        "normal": (
+            "there is no limitation in its usual activity",
+            "it remains able to do what it normally does",
+        ),
+        "limited": (
+            "its ordinary activity is noticeably restricted",
+            "it struggles with part of its usual routine",
+        ),
+        "failed": (
+            "it is unable to complete an essential activity",
+            "it has lost the ability to perform a basic function",
+        ),
     },
 }
 
 TRAJECTORY_TEXT = {
     "train": {
-        "improving": ("the change has been easing", "the observation is less pronounced than before"),
-        "stable": ("the observation has remained much the same", "no clear change has been noted over time"),
-        "worsening": ("the change has become more pronounced", "the observation has continued to deteriorate"),
+        "improving": (
+            "the change has been easing",
+            "the observation is less pronounced than before",
+        ),
+        "stable": (
+            "the observation has remained much the same",
+            "no clear change has been noted over time",
+        ),
+        "worsening": (
+            "the change has become more pronounced",
+            "the observation has continued to deteriorate",
+        ),
     },
     "validation": {
-        "improving": ("the signs have started to settle", "the situation appears to be getting better"),
+        "improving": (
+            "the signs have started to settle",
+            "the situation appears to be getting better",
+        ),
         "stable": ("the pattern has not shifted", "the same findings persist"),
-        "worsening": ("the signs are becoming more apparent", "the situation has been getting worse"),
+        "worsening": (
+            "the signs are becoming more apparent",
+            "the situation has been getting worse",
+        ),
     },
     "test": {
-        "improving": ("there has been a gradual recovery", "the earlier change is now less evident"),
-        "stable": ("the findings are still at the previous level", "the situation has not materially changed"),
-        "worsening": ("the findings have intensified", "the situation is deteriorating further"),
+        "improving": (
+            "there has been a gradual recovery",
+            "the earlier change is now less evident",
+        ),
+        "stable": (
+            "the findings are still at the previous level",
+            "the situation has not materially changed",
+        ),
+        "worsening": (
+            "the findings have intensified",
+            "the situation is deteriorating further",
+        ),
     },
 }
 
 RECORD_FRAMES = {
     "train": ("Animal {animal}: {symptom}. {systemic}. {function}. {trajectory}.",),
-    "validation": ("Observation for animal {animal} — {symptom}; {function}; {trajectory}; {systemic}.",),
-    "test": ("Case {animal} was recorded with {symptom}. During review, {trajectory}; {systemic}; {function}.",),
+    "validation": (
+        "Observation for animal {animal} — {symptom}; {function}; {trajectory}; {systemic}.",
+    ),
+    "test": (
+        "Case {animal} was recorded with {symptom}. During review, {trajectory}; {systemic}; {function}.",
+    ),
 }
 
 ANIMAL_IDS = tuple(f"A{i:03d}" for i in range(1, 241))
@@ -179,9 +261,7 @@ def build_note(
     )
 
 
-def labelled_note(
-    rng: random.Random, *, split: str = "train"
-) -> tuple[str, str, str]:
+def labelled_note(rng: random.Random, *, split: str = "train") -> tuple[str, str, str]:
     """Sample independent scenario attributes and derive target labels."""
 
     category = rng.choices(CATEGORIES, weights=[18, 18, 18, 16, 16, 14], k=1)[0]
@@ -189,7 +269,11 @@ def labelled_note(
     function = rng.choices(FUNCTION_STATES, weights=[0.60, 0.25, 0.15], k=1)[0]
     trajectory = rng.choices(TRAJECTORY_STATES, weights=[0.25, 0.50, 0.25], k=1)[0]
     severity = derive_severity(systemic, function, trajectory)
-    return build_note(rng, category, systemic, function, trajectory, split=split), category, severity
+    return (
+        build_note(rng, category, systemic, function, trajectory, split=split),
+        category,
+        severity,
+    )
 
 
 def make_records(
@@ -227,10 +311,7 @@ def make_records(
             {
                 "instruction": INSTRUCTION,
                 "input": note,
-                "output": (
-                    f"sev={severity} cat={category} "
-                    f"act={ACTION_BY_SEVERITY[severity]}"
-                ),
+                "output": (f"sev={severity} cat={category} act={ACTION_BY_SEVERITY[severity]}"),
             }
         )
 
