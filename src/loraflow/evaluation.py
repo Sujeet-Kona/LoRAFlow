@@ -19,7 +19,7 @@ import transformers
 from transformers import AutoModelForCausalLM
 
 from loraflow.config import AppConfig
-from loraflow.data import Example, dataset_report
+from loraflow.data import Example, dataset_report, load_examples
 from loraflow.metrics import field_scores, format_delta, perplexity_from_loss, score_generations
 from loraflow.runtime import (
     cpu_threads,
@@ -268,7 +268,20 @@ def evaluate_config(
             f"No adapter directory at {adapter_path}. Run 'loraflow train' first."
         )
 
-    _, held_out = prepare_splits(config)
+    if config.data.test_file is not None:
+        held_out = load_examples(
+            config.data.test_file,
+            instruction_field=config.data.instruction_field,
+            input_field=config.data.input_field,
+            output_field=config.data.output_field,
+            template=config.data.prompt_template,
+        )
+        held_out_source = "test_file"
+    else:
+        _, held_out = prepare_splits(config)
+        held_out_source = (
+            "validation_file_fallback" if config.data.validation_file else "split_from_train_fallback"
+        )
     if config.evaluation.max_examples:
         held_out = held_out[: config.evaluation.max_examples]
     if not held_out:
@@ -337,6 +350,7 @@ def evaluate_config(
             ),
         },
         "held_out": dataset_report(held_out),
+        "held_out_source": held_out_source,
         "generation_examples": len(gen_examples),
         "baseline": baseline,
         "fine_tuned": fine_tuned,
