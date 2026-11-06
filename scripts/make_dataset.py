@@ -137,9 +137,11 @@ def make_records(
     count: int, seed: int, *, seen_notes: set[str] | None = None
 ) -> list[dict[str, Any]]:
     """Generate unique records, optionally sharing a uniqueness set across splits."""
-    maximum_unique_notes = len(ANIMAL_IDS) * sum(
-        len(CATEGORY_CUES.get(category, UNKNOWN_SUBJECTS)) for category in CATEGORIES
-    ) * sum(len(cues) for cues in SEVERITY_CUES.values())
+    maximum_unique_notes = (
+        len(ANIMAL_IDS)
+        * sum(len(CATEGORY_CUES.get(category, UNKNOWN_SUBJECTS)) for category in CATEGORIES)
+        * sum(len(cues) for cues in SEVERITY_CUES.values())
+    )
     if count < 1:
         raise ValueError("record count must be at least 1")
     if count > maximum_unique_notes:
