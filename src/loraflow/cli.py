@@ -153,9 +153,19 @@ def command_export(args: argparse.Namespace) -> int:
     # The flag overrides the config so a one-off merge needs no file edit.
     merge = args.merged or config.export.merge_and_save
     if merge:
-        report = merge_and_export(config, adapter_dir=args.adapter, output_dir=args.output)
+        report = merge_and_export(
+            config,
+            adapter_dir=args.adapter,
+            output_dir=args.output,
+            overwrite=args.overwrite,
+        )
     else:
-        report = export_adapter(config, adapter_dir=args.adapter, output_dir=args.output)
+        report = export_adapter(
+            config,
+            adapter_dir=args.adapter,
+            output_dir=args.output,
+            overwrite=args.overwrite,
+        )
     print(json.dumps(report, indent=2, default=str))
     return 0
 
@@ -251,6 +261,11 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--adapter")
     export.add_argument("--output")
     export.add_argument("--merged", action="store_true", help="Merge LoRA weights into the base")
+    export.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace an existing export destination (default: refuse)",
+    )
     export.set_defaults(func=command_export)
 
     serve = subparsers.add_parser(
