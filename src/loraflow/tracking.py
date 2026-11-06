@@ -116,9 +116,7 @@ class MLflowTracker:
         self._run: Any = None
         self._owns_run = False
 
-        tracking_uri = os.environ.get(
-            "LORAFLOW_MLFLOW_TRACKING_URI", config.tracking.tracking_uri
-        )
+        tracking_uri = os.environ.get("LORAFLOW_MLFLOW_TRACKING_URI", config.tracking.tracking_uri)
         # A relative sqlite/file URI resolves against the process working
         # directory; normalise it so `mlflow ui` finds the store from anywhere.
         if tracking_uri.startswith("file://"):
@@ -138,9 +136,7 @@ class MLflowTracker:
             "LORAFLOW_MLFLOW_ARTIFACTS_DIR", config.tracking.artifacts_dir
         )
         if artifacts_uri:
-            self.artifact_dir = (
-                Path(artifacts_uri.removeprefix("file://")).expanduser().resolve()
-            )
+            self.artifact_dir = Path(artifacts_uri.removeprefix("file://")).expanduser().resolve()
             desired_location = "file://" + str(self.artifact_dir)
 
         # MLflow 3.x fixes the artifact location when an experiment is created,
