@@ -118,8 +118,7 @@ fixed rules. The action vocabulary (`log_only`, `recheck_12h`, `flag_vet_now`) a
 `key=value` schema are not something a base 0.5B model produces from pretraining alone, which
 is why the baseline scores 0.0 exact match and the fine-tuned adapter is genuinely different
 rather than nominally so. Records are generated from fixed, disjoint seeds for train and
-validation, so reruns reproduce the same 480/120 files byte for byte. Swap in real JSONL
-(`instruction` / `input` / `output` fields, or plain `text`) by editing `configs/*.yaml`.
+validation, so reruns reproduce the same 480/120 files byte for byte. Use real instruction-tuning JSONL with the configured instruction and output fields, plus an optional input field. Plain-text-only records are not supported for supervised instruction tuning.
 
 ## Configuration
 
