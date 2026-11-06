@@ -73,7 +73,9 @@ def _validate_manifest(manifest_path: Path, splits: dict[str, list[dict]]) -> di
                     f"found {len(matches)}"
                 )
             expected_category, _ = matches[0]
-            labels = dict(re.findall(r"(sev|cat|act)=([a-z0-9_]+)", str(record.get("output", ""))))
+            labels = dict(
+                re.findall(r"(sev|cat|act)=([a-z0-9_]+)", str(record.get("output", "")))
+            )
             if set(labels) != {"sev", "cat", "act"}:
                 raise ValueError(f"{split_name} record {index}: malformed output labels {labels}")
             if labels["cat"] != expected_category:
