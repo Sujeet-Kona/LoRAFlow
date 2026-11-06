@@ -42,6 +42,19 @@ Values are accuracy / macro-F1. Action duplicates severity's scores because the 
 
 Track C's category macro-F1 of 0.4345 is a clear weakness. Its per-class category recall is low for several classes, including behaviour (10%) and mobility (3.57%). Do not present Track C as a strong category classifier.
 
+The committed Track C test split is not exactly category-balanced:
+
+| Category | Test examples |
+| --- | ---: |
+| Behaviour | 30 |
+| Feeding | 24 |
+| Mobility | 28 |
+| Respiratory | 18 |
+| Skin | 21 |
+| Unknown | 29 |
+
+Macro-F1 weights categories equally, but per-class recall is estimated from only 18–30 synthetic examples per category. Treat these class-level figures as diagnostics for this fixed benchmark fixture, not stable estimates of real-world category performance.
+
 ## Dataset and nearest-neighbour audit
 
 The audit reports zero exact duplicate notes in each 150-example test split. A separate nearest-neighbour similarity audit sampled 60 test notes per track:
