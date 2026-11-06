@@ -4,9 +4,11 @@ An independently implemented, modular pipeline for preparing datasets, fine-tuni
 
 > **Status:** The pipeline runs end to end and has been verified on an Apple M4 (16 GB) with MPS and CPU. Training, evaluation, tracking, export, and serving each completed real runs whose numbers are recorded below and on disk. It is **not** production-ready: the task is a small synthetic corpus, the model is a 0.5B toy, and single-host only.
 
-## Measured results
+## Historical v1 measurements — not generalization evidence
 
-Every figure below was printed by a real run on this machine and is on disk:
+**Dataset audit disclosure:** the original v1 synthetic corpus used label-correlated phrase templates. Its audit found 65–71% template overlap in held-out splits and an 82.5–85% 1-nearest-neighbour exact-match baseline. The model measurements below are retained as historical pipeline/reproducibility evidence only; they must not be presented as proof of task generalization. The v2 generator now derives severity from independent scenario attributes and uses split-specific surface-form families. A new v2 model-quality result is intentionally not claimed until the regenerated corpus passes audit and baseline comparisons.
+
+The figures below were printed by real v1 runs on this machine and are retained as historical artifacts:
 `artifacts/{train-run,repro-run}/training_metadata.json`, `artifacts/{train-run,repro-run}/evaluation_report.json`,
 and the `export_manifest.json` files under the export directories.
 No external benchmark is reproduced and no accuracy is claimed beyond this synthetic task.
@@ -23,7 +25,7 @@ No external benchmark is reproduced and no accuracy is claimed beyond this synth
 | Tests | module-focused pytest suite; Ruff lint and format checks |
 | CPU path | `configs/ci_smoke.yaml` on `sshleifer/tiny-gpt2`: `cpu` + `torch.float32`, 2 steps, `train_loss` 10.83, accuracy deltas `+0.0000` — plumbing verified, learning is not the point of that config |
 
-**Provenance and reproducibility.** Every figure above was produced from the current tree. The 90-step
+**Historical v1 provenance.** The figures above were produced before the v1 dataset leakage was identified; they remain reproducible pipeline records, not valid evidence of generalization. The 90-step
 run was repeated into a second output directory (`configs/repro_check.yaml` → `artifacts/repro-run/`)
 and the two runs agree exactly: `best_eval_loss` `0.1346336007118225`, `train_loss` `0.8617594838142395`,
 `checkpoint-90` as the best checkpoint, a byte-identical `adapter_model.safetensors`
@@ -44,7 +46,7 @@ pip install -e ".[train,serve]"    # ML stages
 ```
 
 ```bash
-python scripts/make_dataset.py                 # deterministic 480 train / 120 validation / 120 test JSONL
+python scripts/make_dataset.py                 # writes isolated v2 data to data/v2/; preserves the old v1 files
 loraflow data-check --config configs/train.yaml
 loraflow train      --config configs/train.yaml
 loraflow evaluate   --config configs/train.yaml
@@ -91,7 +93,7 @@ LoRAFlow/
 │   ├── repro_check.yaml         that run again, into a second output directory
 │   ├── smoke.yaml               2-step MPS validation
 │   └── ci_smoke.yaml            tiny-gpt2 / CPU / 2 steps, tracking off
-├── scripts/make_dataset.py      deterministic synthetic corpus generator
+├── scripts/make_dataset.py      compositional synthetic v2 corpus generator
 ├── src/loraflow/
 │   ├── config.py                pydantic model, extra="forbid"
 │   ├── runtime.py               device/dtype resolution, seeding, JSON helpers
@@ -111,15 +113,25 @@ LoRAFlow/
 Heavy imports (`torch`, `transformers`, `trl`, `peft`) live inside the ML modules, so
 `pip install -e ".[dev]"` alone runs the data, metrics, config, and CLI test suites.
 
-## The task used for verification
+## Synthetic task and dataset controls
 
-`scripts/make_dataset.py` writes a synthetic farm-animal triage corpus: each record is a
-short free-text observation note plus a three-field answer (`sev=… cat=… act=…`) derived from
-fixed rules. The action vocabulary (`log_only`, `recheck_12h`, `flag_vet_now`) and the
-`key=value` schema are not something a base 0.5B model produces from pretraining alone, which
-is why the baseline scores 0.0 exact match and the fine-tuned adapter is genuinely different
-rather than nominally so. Records are generated from fixed, disjoint seeds for train,
-validation, and test, so reruns reproduce all three files byte for byte. Use real instruction-tuning JSONL with the configured instruction and output fields, plus an optional input field. Plain-text-only records are not supported for supervised instruction tuning.
+`scripts/make_dataset.py` generates a synthetic animal-observation triage task. Each record
+contains a free-text observation and a three-field target (`sev=… cat=… act=…`). Category
+comes from the symptom concept. Severity is derived from independently sampled systemic,
+functional, and trajectory attributes using an explicit policy function; action follows the
+severity-to-action mapping. The labels are therefore not selected first and then encoded in a
+single severity phrase.
+
+The generator writes v2 data to `data/v2/` by default, preserving the original v1 files for
+audit/reproduction. Train, validation, and test use separate wording/frame families with
+deterministic seeds and a shared exact-note uniqueness set. This is a synthetic engineering
+fixture, not veterinary guidance, a clinical decision system, or a substitute for real-world
+evaluation. The audit and nearest-neighbour baselines remain mandatory: split-specific frames
+alone do not prove semantic generalization. No v2 model-quality claim is made until the new
+corpus has been regenerated, audited, and evaluated against non-neural baselines.
+
+Use real instruction-tuning JSONL with the configured instruction and output fields, plus an
+optional input field. Plain-text-only records are not supported for supervised instruction tuning.
 
 ## Configuration
 
@@ -185,7 +197,7 @@ command takes `--backend-store-uri`, not `--tracking-uri` — the CLI passes the
 
 `pytest` runs the module-focused test suite across the core, ML integration, export, API, and CLI modules. Coverage: JSONL validation with the offending line
 number, template rendering (empty input blocks, custom templates, whitespace-terminated templates,
-unknown placeholders), seeded split determinism and disjointness, deduplication, split statistics,
+unknown placeholders), seeded split determinism and disjointness, generator severity-policy rules and split-family isolation, deduplication, split statistics,
 device and dtype resolution including the unavailable-accelerator error, seeding, atomic JSON writes,
 answer normalization, exact/prefix/per-field scoring, perplexity, masked token accuracy, delta
 formatting, prompt/completion column shape, LoRA and `SFTConfig` translation (including
