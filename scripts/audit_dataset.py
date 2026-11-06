@@ -51,6 +51,7 @@ def _validate_manifest(manifest_path: Path, splits: dict[str, list[dict]]) -> di
         raise ValueError(f"symptom concepts overlap across splits: {overlaps}")
 
     action_map = manifest["action_by_severity"]
+    cue_maps = manifest["severity_cues_by_split"]
     checked = {}
     for split_name, records in splits.items():
         expected_count = manifest["counts"][split_name]
@@ -80,6 +81,37 @@ def _validate_manifest(manifest_path: Path, splits: dict[str, list[dict]]) -> di
                     f"{split_name} record {index}: category {labels['cat']} does not match "
                     f"symptom concept category {expected_category}"
                 )
+            observed_states = {}
+            for dimension, state_cues in cue_maps[split_name].items():
+                matched_states = [
+                    state
+                    for state, phrases in state_cues.items()
+                    if any(phrase in text for phrase in phrases)
+                ]
+                if len(matched_states) != 1:
+                    raise ValueError(
+                        f"{split_name} record {index}: expected one {dimension} cue, "
+                        f"found {matched_states}"
+                    )
+                observed_states[dimension] = matched_states[0]
+            if (
+                observed_states["systemic"] == "critical"
+                or observed_states["function"] == "failed"
+            ):
+                expected_severity = "urgent"
+            elif (
+                observed_states["systemic"] == "mild"
+                or observed_states["function"] == "limited"
+                or observed_states["trajectory"] == "worsening"
+            ):
+                expected_severity = "watch"
+            else:
+                expected_severity = "routine"
+            if labels["sev"] != expected_severity:
+                raise ValueError(
+                    f"{split_name} record {index}: severity {labels['sev']} does not match "
+                    f"policy result {expected_severity}"
+                )
             if labels["sev"] not in action_map or labels["act"] != action_map[labels["sev"]]:
                 raise ValueError(
                     f"{split_name} record {index}: action {labels['act']} is inconsistent "
@@ -95,7 +127,9 @@ def _validate_manifest(manifest_path: Path, splits: dict[str, list[dict]]) -> di
             for name, categories in concepts.items()
         },
         "cross_split_symptom_overlap": overlaps,
-        "category_and_action_consistency": "passed",
+        "category_consistency": "passed",
+        "severity_policy_consistency": "passed",
+        "action_by_severity_consistency": "passed",
     }
 
 
