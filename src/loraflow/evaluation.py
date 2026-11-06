@@ -18,8 +18,8 @@ import torch
 import transformers
 from transformers import AutoModelForCausalLM
 
-from loraflow.config import AppConfig
-from loraflow.data import Example, dataset_report, load_examples
+from loraflow.config import AppConfig, config_sha256
+from loraflow.data import Example, dataset_report, file_identity, load_examples
 from loraflow.metrics import field_scores, format_delta, perplexity_from_loss, score_generations
 from loraflow.runtime import (
     cpu_threads,
@@ -364,6 +364,12 @@ def evaluate_config(
 
     report: dict[str, Any] = {
         "measured_at_utc": timestamp(),
+        "config_sha256": config_sha256(config),
+        "held_out_dataset": file_identity(
+            config.data.test_file
+            if config.data.test_file is not None
+            else config.data.validation_file or config.data.train_file
+        ),
         "base_model": base_model_name,
         "adapter_dir": str(adapter_path),
         "environment": {
