@@ -25,9 +25,7 @@ def make_report(seed: int, exact: float, category_f1: float) -> dict:
 
 
 def test_summarize_reports_aggregates_across_seeds() -> None:
-    result = summarize_reports(
-        [make_report(42, 0.4, 0.3), make_report(43, 0.6, 0.5)]
-    )
+    result = summarize_reports([make_report(42, 0.4, 0.3), make_report(43, 0.6, 0.5)])
 
     assert [row["seed"] for row in result["seeds"]] == [42, 43]
     assert result["summary"]["exact_match"] == {
