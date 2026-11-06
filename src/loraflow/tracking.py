@@ -94,6 +94,9 @@ class NoopTracker:
     def log_artifact(self, path: str | Path, *, name: str | None = None) -> None:
         return None
 
+    def log_export(self, report: dict[str, Any]) -> None:
+        return None
+
     def finish(self) -> None:
         return None
 
@@ -225,6 +228,14 @@ class MLflowTracker:
         path = Path(path)
         if path.is_file():
             self._mlflow.log_artifact(str(path), artifact_path=name)
+
+    def log_export(self, report: dict[str, Any]) -> None:
+        """Record export metadata and its manifest without uploading model weights."""
+        self.start()
+        self._log_flat(report, prefix="export")
+        manifest = Path(str(report.get("path", ""))) / "export_manifest.json"
+        if manifest.is_file():
+            self.log_artifact(manifest)
 
     def _log_flat(self, payload: dict[str, Any], *, prefix: str = "") -> None:
         flat = flatten(prefix, payload)
