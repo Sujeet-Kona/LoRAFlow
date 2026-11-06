@@ -60,7 +60,7 @@ _COMPARED = (
 def _common_prefix_length(left: list[int], right: list[int]) -> int:
     """Return the shared token prefix length, matching TRL's completion-mask logic."""
 
-    for index, (left_token, right_token) in enumerate(zip(left, right)):
+    for index, (left_token, right_token) in enumerate(zip(left, right, strict=False)):
         if left_token != right_token:
             return index
     return min(len(left), len(right))
