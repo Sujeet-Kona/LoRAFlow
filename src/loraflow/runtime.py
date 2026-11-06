@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
 
 DEVICE_NAMES = ("auto", "cpu", "mps", "cuda")
@@ -70,6 +71,7 @@ def set_global_seed(seed: int, device: str = "cpu") -> None:
 
     os.environ["PYTHONHASHSEED"] = str(seed)
     random.seed(seed)
+    np.random.seed(seed)
     torch.manual_seed(seed)
     if device == "cuda":
         torch.cuda.manual_seed_all(seed)
