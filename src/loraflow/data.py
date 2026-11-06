@@ -263,7 +263,9 @@ def file_identity(path: str | Path) -> dict[str, Any]:
     }
 
 
-def dataset_provenance(train_file: str | Path, validation_file: str | Path | None) -> dict[str, Any]:
+def dataset_provenance(
+    train_file: str | Path, validation_file: str | Path | None
+) -> dict[str, Any]:
     """Identify the files a split actually came from.
 
     ``held_out_source`` distinguishes a real held-out file from a slice carved out of
@@ -275,5 +277,7 @@ def dataset_provenance(train_file: str | Path, validation_file: str | Path | Non
     return {
         "train": file_identity(train_file),
         "held_out": file_identity(held_out),
-        "held_out_source": "validation_file" if validation_file is not None else "carved_from_train",
+        "held_out_source": "validation_file"
+        if validation_file is not None
+        else "carved_from_train",
     }
