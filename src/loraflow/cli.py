@@ -297,6 +297,9 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         LOGGER.warning("Interrupted")
         return 130
+    except FileExistsError as exc:
+        LOGGER.error("%s", exc)
+        return 2
     except FileNotFoundError as exc:
         LOGGER.error("%s", exc)
         return 2
