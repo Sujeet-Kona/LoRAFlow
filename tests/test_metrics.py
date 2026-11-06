@@ -123,6 +123,39 @@ def test_field_scores_empty_inputs() -> None:
     assert field_scores([], []) == {}
 
 
+def test_classification_scores_include_per_class_metrics_and_confusion_matrix() -> None:
+    from loraflow.metrics import classification_scores
+
+    scores = classification_scores(
+        ["sev=watch cat=skin act=recheck_12h", "sev=urgent cat=skin act=flag_vet_now"],
+        ["sev=watch cat=skin act=recheck_12h", "sev=routine cat=feeding act=log_only"],
+    )
+
+    assert scores["sev"]["accuracy"] == 0.5
+    assert scores["sev"]["per_class"]["watch"]["precision"] == 1.0
+    assert scores["sev"]["per_class"]["routine"]["recall"] == 0.0
+    assert scores["sev"]["confusion_matrix"]["routine"]["urgent"] == 1
+    assert "macro_f1" in scores["cat"]
+
+
+def test_structured_output_scores_detect_malformed_and_missing_fields() -> None:
+    from loraflow.metrics import structured_output_scores
+
+    scores = structured_output_scores(
+        [
+            "sev=watch cat=skin act=recheck_12h",
+            "sev=urgent cat=skin",
+            "sev=urgent sev=watch cat=skin act=flag_vet_now",
+            "answer: sev=watch cat=skin act=recheck_12h",
+        ]
+    )
+
+    assert scores["valid"] == 1
+    assert scores["malformed"] == 3
+    assert scores["missing_fields"]["act"] == 1
+    assert scores["duplicate_keys"] == 1
+
+
 def test_format_delta_shows_both_ends() -> None:
     assert format_delta(0.1, 0.25) == "0.1000 -> 0.2500 (+0.1500)"
 
