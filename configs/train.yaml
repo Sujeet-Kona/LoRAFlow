@@ -1,0 +1,45 @@
+data:
+  train_file: data/v3/train.jsonl
+  validation_file: data/v3/validation.jsonl
+  test_file: data/v3/test.jsonl
+  max_seq_length: 256
+
+lora:
+  rank: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: [q_proj, v_proj]
+
+training:
+  base_model: Qwen/Qwen2.5-0.5B
+  output_dir: artifacts/train-run
+  num_train_epochs: 3
+  max_steps: -1
+  learning_rate: 0.0002
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4
+  eval_steps: 15
+  save_steps: 15
+  logging_steps: 5
+  seed: 42
+  device: auto
+  dtype: auto
+  run_name: train-run
+
+evaluation:
+  output_file: artifacts/train-run/evaluation_report.json
+  max_examples: 120
+  # Match the full held-out set so generation metrics have the same coverage as loss metrics.
+  generation_examples: 120
+  max_new_tokens: 24
+  batch_size: 4
+
+tracking:
+  enabled: true
+  tracking_uri: sqlite:///mlflow.db
+  artifacts_dir: file://./mlartifacts
+  experiment_name: loraflow
+
+export:
+  output_dir: artifacts/exported
+  merge_and_save: false

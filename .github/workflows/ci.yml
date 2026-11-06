@@ -1,0 +1,149 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# LoRAFlow has no Kubernetes or vLLM path; CI stays on plain CPU wheels.
+env:
+  HF_HUB_ENABLE_HF_TRANSFER: "0"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install --upgrade pip
+      - run: pip install ".[dev]"
+      - run: ruff check src tests scripts
+      - run: ruff format --check src tests scripts
+
+  unit:
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install --upgrade pip
+      # The light install proves the core logic (config, dataset, metrics,
+      # HTTP layer) needs no torch. Model-dependent tests skip themselves.
+      - run: pip install ".[dev]"
+      - run: pytest -q
+
+  pipeline:
+    runs-on: ubuntu-latest
+    needs: unit
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          allow-prereleases: true
+      - run: pip install --upgrade pip
+      # Install the CPU-only wheel explicitly; the default PyPI torch build
+      # currently pulls CUDA runtime libraries onto runners with no GPU.
+      - run: pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple "torch==2.15.0+cpu"
+      - run: pip install -e ".[train,serve,dev]"
+      - run: python -c "import torch, transformers, trl, peft; print('torch', torch.__version__); print('transformers', transformers.__version__); print('trl', trl.__version__); print('peft', peft.__version__)"
+
+      # Full suite, including the tests that skipped in the light job.
+      - run: pytest -q
+
+      - name: Regenerate the demo corpus
+        run: python scripts/make_dataset.py --out-dir data/v3
+
+      - name: Audit held-out symptom concepts and baselines
+        run: |
+          python scripts/audit_dataset.py \
+            --train data/v3/train.jsonl \
+            --held validation=data/v3/validation.jsonl \
+            --held test=data/v3/test.jsonl \
+            --manifest data/v3/manifest.json \
+            --output artifacts/ci-smoke/dataset_audit.json
+
+      - name: Validate dataset and split
+        run: loraflow data-check --config configs/ci_smoke.yaml
+
+      # Two steps on a random-weight toy model: exercises the real TRL + PEFT
+      # path and the artifact contract without claiming any learning happened.
+      - name: Train a LoRA adapter
+        run: loraflow train --config configs/ci_smoke.yaml
+
+      - name: Assert adapter artifacts exist
+        run: |
+          test -s artifacts/ci-smoke/adapter/adapter_model.safetensors
+          test -s artifacts/ci-smoke/adapter/adapter_config.json
+          test -s artifacts/ci-smoke/adapter/tokenizer_config.json
+          test -s artifacts/ci-smoke/training_metadata.json
+
+      - name: Evaluate baseline against adapter
+        run: loraflow evaluate --config configs/ci_smoke.yaml
+
+      - name: Assert evaluation report is complete
+        run: |
+          python - <<'PY'
+          import json
+          report = json.load(open("artifacts/ci-smoke/evaluation_report.json"))
+          for key in (
+              "baseline",
+              "fine_tuned",
+              "delta",
+              "reproducibility",
+              "held_out",
+              "config_sha256",
+              "held_out_dataset",
+          ):
+              assert key in report, f"missing {key}"
+          assert len(report["config_sha256"]) == 64
+          assert len(report["held_out_dataset"]["sha256"]) == 64
+          for metric in ("mean_answer_loss", "perplexity", "answer_token_accuracy"):
+              assert metric in report["baseline"], f"baseline missing {metric}"
+              assert metric in report["fine_tuned"], f"fine_tuned missing {metric}"
+          PY
+
+      - name: Export the adapter
+        run: loraflow export --config configs/ci_smoke.yaml
+
+      - name: Serve and call the API
+        run: |
+          loraflow serve --config configs/ci_smoke.yaml --port 8000 > serve.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid' EXIT
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8000/health > /dev/null; then break; fi
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8000/health
+          curl -sf -X POST http://127.0.0.1:8000/generate \
+            -H 'content-type: application/json' \
+            -d '{"prompt":"Label the note","input":"Animal A001: is limping on the front left leg."}'
+          curl -sf http://127.0.0.1:8000/metrics | grep loraflow_requests_total
+          # A rejected request must be a client error, not a crash.
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8000/generate \
+            -H 'content-type: application/json' -d '{"prompt":""}')
+          test "$code" = "422"
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config --quiet
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-smoke-artifacts
+          path: artifacts/ci-smoke
+          if-no-files-found: warn

@@ -13,30 +13,36 @@ dependencies = [
   "PyYAML>=6.0,<7",
 ]
 
+[project.scripts]
+loraflow = "loraflow.cli:main"
+
 [project.optional-dependencies]
+# Bounds reflect the versions this pipeline was actually run against:
+# TRL 1.x (SFTConfig has warmup_steps, not warmup_ratio) and Transformers 5.x
+# (AutoModelForCausalLM.from_pretrained takes dtype=, not torch_dtype=).
 train = [
-  "torch>=2.2",
-  "transformers>=4.40",
-  "datasets>=2.18",
-  "peft>=0.10",
-  "trl>=0.8",
-  "accelerate>=0.28",
-  "mlflow>=2.10",
+  "torch>=2.6,<3",
+  "transformers>=4.49,<6",
+  "datasets>=3.0,<6",
+  "peft>=0.14,<1",
+  "trl>=1.0,<2",
+  "accelerate>=1.0,<2",
+  "mlflow>=3.0,<4",
+  "safetensors>=0.4",
 ]
 serve = [
-  "fastapi>=0.110",
-  "uvicorn[standard]>=0.27",
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.30",
   "prometheus-client>=0.20",
-  "transformers>=4.40",
-  "peft>=0.10",
-  "torch>=2.2",
-]
-qlora = [
-  "bitsandbytes>=0.43; platform_system == 'Linux'",
+  "pydantic>=2.6,<3",
+  "transformers>=4.49,<6",
+  "peft>=0.14,<1",
+  "torch>=2.6,<3",
 ]
 dev = [
   "pytest>=8.0",
   "ruff>=0.3",
+  "httpx2>=2.0",  # starlette's TestClient backend
 ]
 
 [tool.setuptools]
@@ -48,7 +54,17 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+  "slow: needs model weights or a real training run",
+]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["B008", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
