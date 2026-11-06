@@ -289,10 +289,6 @@ def run_training(
         len(validation_examples),
     )
 
-    if tracker is not None:
-        tracker.start(run_name=sft_config.run_name)
-        tracker.log_run(config, extra={"trainable_parameters": trainable})
-
     history = trainer.train(resume_from_checkpoint=resume_from_checkpoint)
     # transformers 5 returns (global_step, training_loss, metrics); the epoch
     # count and per-eval results live on the trainer state.
@@ -356,9 +352,13 @@ def run_training(
     write_json(run_dir / METADATA_FILENAME, metadata)
 
     if tracker is not None:
-        tracker.log_training(metadata)
-        tracker.log_adapter(adapter_dir)
-        tracker.finish()
+        try:
+            tracker.start(run_name=sft_config.run_name)
+            tracker.log_run(config, extra={"trainable_parameters": trainable})
+            tracker.log_training(metadata)
+            tracker.log_adapter(adapter_dir)
+        finally:
+            tracker.finish()
 
     return TrainingResult(
         output_dir=run_dir,
