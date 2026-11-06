@@ -30,7 +30,6 @@ def _parse_pair(value: str) -> tuple[str, Path]:
     return name, Path(path)
 
 
-
 def _validate_manifest(manifest_path: Path, splits: dict[str, list[dict]]) -> dict:
     """Verify that held-out symptom concepts are genuinely absent from training."""
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
