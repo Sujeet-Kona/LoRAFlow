@@ -13,6 +13,7 @@ from loraflow.export import (  # noqa: E402
     ADAPTER_FILES,
     ExportValidationError,
     _ensure_separate_export_path,
+    _prepare_export_target,
     _max_abs_delta,
     _save_dtype,
     validate_export,
@@ -158,3 +159,106 @@ def test_export_destination_cannot_overlap_source(tmp_path: Path) -> None:
             _ensure_separate_export_path(source, target)
 
     assert source.is_dir()
+
+
+
+def test_export_target_refuses_to_replace_existing_data_by_default(tmp_path: Path) -> None:
+    target = tmp_path / "existing"
+    target.mkdir()
+    sentinel = target / "keep.txt"
+    sentinel.write_text("keep", encoding="utf-8")
+
+    with pytest.raises(FileExistsError, match="overwrite=True"):
+        _prepare_export_target(target, overwrite=False)
+
+    assert sentinel.read_text(encoding="utf-8") == "keep"
+
+
+def test_export_target_replaces_existing_directory_only_when_requested(tmp_path: Path) -> None:
+    target = tmp_path / "existing"
+    target.mkdir()
+    (target / "old.txt").write_text("old", encoding="utf-8")
+
+    _prepare_export_target(target, overwrite=True)
+
+    assert target.is_dir()
+    assert list(target.iterdir()) == []
+
+
+def test_export_target_replaces_existing_file_only_when_requested(tmp_path: Path) -> None:
+    target = tmp_path / "existing"
+    target.write_text("old", encoding="utf-8")
+
+    _prepare_export_target(target, overwrite=True)
+
+    assert target.is_dir()
+
+
+def test_adapter_export_reload_loads_base_and_applies_adapter(tmp_path: Path, monkeypatch) -> None:
+    torch = pytest.importorskip("torch")
+    from peft import PeftModel
+    from safetensors import torch as safetensors_torch
+    import loraflow.export as export_module
+
+    config = make_config(tmp_path)
+    directory = write_minimal_adapter(tmp_path / "adapter")
+    calls = []
+
+    class FakeTokenizer:
+        def __call__(self, prompt, *, return_tensors):
+            assert prompt == "LoRAFlow adapter reload validation."
+            assert return_tensors == "pt"
+            return {"input_ids": torch.ones((1, 3), dtype=torch.long)}
+
+    class FakeModel:
+        def to(self, device):
+            calls.append(("device", device))
+            return self
+
+        def eval(self):
+            calls.append(("eval",))
+            return self
+
+        def __call__(self, **inputs):
+            assert inputs["input_ids"].shape == (1, 3)
+            calls.append(("forward",))
+
+    class FakePeftModel:
+        @staticmethod
+        def from_pretrained(base_model, adapter_path):
+            assert adapter_path == str(directory)
+            calls.append(("adapter",))
+            return FakeModel()
+
+    monkeypatch.setattr(export_module.AutoTokenizer, "from_pretrained", lambda *_a, **_k: FakeTokenizer())
+    monkeypatch.setattr(export_module.AutoModelForCausalLM, "from_pretrained", lambda *_a, **_k: FakeModel())
+    monkeypatch.setattr(PeftModel, "from_pretrained", FakePeftModel.from_pretrained)
+    monkeypatch.setattr(safetensors_torch, "load_file", lambda *_a, **_k: {"lora": torch.ones(2)})
+    monkeypatch.setattr(export_module, "_free_memory", lambda _device: None)
+
+    report = validate_export(config, directory, kind="adapter")
+
+    assert report["reload_verified"] is True
+    assert ("adapter",) in calls
+    assert ("forward",) in calls
+
+
+def test_adapter_export_can_skip_model_reload_when_configured(tmp_path: Path, monkeypatch) -> None:
+    torch = pytest.importorskip("torch")
+    from safetensors import torch as safetensors_torch
+    import loraflow.export as export_module
+
+    config = make_config(tmp_path)
+    config.export.verify_reload = False
+    directory = write_minimal_adapter(tmp_path / "adapter")
+    monkeypatch.setattr(export_module.AutoTokenizer, "from_pretrained", lambda *_a, **_k: object())
+    monkeypatch.setattr(safetensors_torch, "load_file", lambda *_a, **_k: {"lora": torch.ones(2)})
+
+    def unexpected_load(*_args, **_kwargs):
+        pytest.fail("Base model should not load when verify_reload is disabled")
+
+    monkeypatch.setattr(export_module.AutoModelForCausalLM, "from_pretrained", unexpected_load)
+
+    report = validate_export(config, directory, kind="adapter")
+
+    assert report["reload_verified"] is False
