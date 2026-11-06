@@ -1,7 +1,7 @@
 data:
-  train_file: data/train.jsonl
-  validation_file: data/validation.jsonl
-  test_file: data/test.jsonl
+  train_file: data/v2/train.jsonl
+  validation_file: data/v2/validation.jsonl
+  test_file: data/v2/test.jsonl
   max_seq_length: 256
   max_train_examples: 32
 
