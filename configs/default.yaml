@@ -49,7 +49,8 @@ training:
 evaluation:
   output_file: artifacts/default-run/evaluation_report.json
   max_examples: 120
-  generation_examples: 24
+  # Match the full held-out set so generation metrics have the same coverage as loss metrics.
+  generation_examples: 120
   max_new_tokens: 24
   # Greedy by default so baseline and fine-tuned runs are comparable.
   do_sample: false
