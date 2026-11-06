@@ -19,6 +19,7 @@ class DataConfig(BaseModel):
 
     train_file: Path
     validation_file: Path | None = None
+    test_file: Path | None = None
     text_field: str = "text"
     max_seq_length: PositiveInt = 1024
 
