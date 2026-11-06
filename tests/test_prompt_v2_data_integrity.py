@@ -24,7 +24,7 @@ def _write_track(directory, *, record=None):
 
     for split in validator["SPLITS"]:
         path = directory / f"{split}.jsonl"
-        raw = (json.dumps(row) + "\\n").encode("utf-8")
+        raw = (json.dumps(row) + "\n").encode("utf-8")
         path.write_bytes(raw)
         counts[split] = 1
         hashes[split] = hashlib.sha256(raw).hexdigest()
@@ -50,19 +50,19 @@ def test_verify_track_rejects_modified_split_hash(tmp_path, monkeypatch):
     directory = tmp_path / "track_a"
     _write_track(directory)
     (directory / "test.jsonl").write_text(
-        '{"instruction":"tampered","input":"x","output":"y"}\\n',
+        '{"instruction":"tampered","input":"x","output":"y"}\n',
         encoding="utf-8",
     )
-    monkeypatch.setattr(validator, "DATA_ROOT", tmp_path)
+    monkeypatch.setitem(validator, "DATA_ROOT", tmp_path)
 
     with pytest.raises(ValueError, match="SHA-256 mismatch"):
-        validator.verify_track("a")
+        validator["verify_track"]("a")
 
 
 def test_verify_track_rejects_invalid_record_even_with_matching_hash(tmp_path, monkeypatch):
     directory = tmp_path / "track_a"
     _write_track(directory)
-    invalid = b'{"instruction":"Classify","input":"note"}\\n'
+    invalid = b'{"instruction":"Classify","input":"note"}\n'
     path = directory / "validation.jsonl"
     path.write_bytes(invalid)
 
@@ -70,7 +70,7 @@ def test_verify_track_rejects_invalid_record_even_with_matching_hash(tmp_path, m
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["sha256"]["validation"] = hashlib.sha256(invalid).hexdigest()
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-    monkeypatch.setattr(validator, "DATA_ROOT", tmp_path)
+    monkeypatch.setitem(validator, "DATA_ROOT", tmp_path)
 
     with pytest.raises(ValueError, match="expected object with"):
-        validator.verify_track("a")
+        validator["verify_track"]("a")
