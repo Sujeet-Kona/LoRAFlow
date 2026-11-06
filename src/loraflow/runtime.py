@@ -71,6 +71,10 @@ def set_global_seed(seed: int, device: str = "cpu") -> None:
     os.environ["PYTHONHASHSEED"] = str(seed)
     random.seed(seed)
     try:
+            except ImportError:
+        pass
+    else:
+        try:
         import numpy as np
     except ImportError:
         pass
