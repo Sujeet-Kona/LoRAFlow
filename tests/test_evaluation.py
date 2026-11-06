@@ -49,12 +49,30 @@ def test_scoring_row_preserves_full_completion() -> None:
     assert labels == [IGNORE_INDEX, IGNORE_INDEX, 3, 4]
 
 
-def test_completion_with_eos_appends_only_when_missing() -> None:
-    from loraflow.evaluation import _completion_with_eos
+def test_prompt_completion_row_uses_trl_common_prefix_mask() -> None:
+    from loraflow.evaluation import _build_prompt_completion_row
 
-    assert _completion_with_eos([3, 4], 2) == [3, 4, 2]
-    assert _completion_with_eos([3, 2], 2) == [3, 2]
-    assert _completion_with_eos([3, 4], None) == [3, 4]
+    input_ids, labels = _build_prompt_completion_row(
+        [10, 11, 12],
+        [10, 11, 99, 13, 2],
+        max_length=8,
+        source_line=1,
+    )
+
+    assert input_ids == [10, 11, 99, 13, 2]
+    assert labels == [IGNORE_INDEX, IGNORE_INDEX, 99, 13, 2]
+
+
+def test_prompt_completion_row_rejects_full_sequence_truncation() -> None:
+    from loraflow.evaluation import _build_prompt_completion_row
+
+    with pytest.raises(ValueError, match="exceeding max_seq_length=4"):
+        _build_prompt_completion_row(
+            [10, 11],
+            [10, 11, 12, 13, 2],
+            max_length=4,
+            source_line=3,
+        )
 
 
 def test_answer_labels_masks_everything_before_the_completion() -> None:
