@@ -1,6 +1,7 @@
 data:
   train_file: data/train.jsonl
   validation_file: data/validation.jsonl
+  test_file: data/test.jsonl
   max_seq_length: 96
   # Small slice keeps the CI job fast; the point is wiring, not learning.
   max_train_examples: 24
