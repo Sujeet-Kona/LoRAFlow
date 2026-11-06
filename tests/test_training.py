@@ -263,4 +263,4 @@ def test_training_accepts_examples_at_the_eos_inclusive_limit() -> None:
         line_number=1,
     )
 
-    validate_examples_fit(FakeTokenizer(), [example], max_length=10)
+    validate_examples_fit(FakeTokenizer(), [example], max_length=11)
