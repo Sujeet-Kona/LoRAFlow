@@ -306,7 +306,9 @@ def evaluate_config(
     else:
         _, held_out = prepare_splits(config)
         held_out_source = (
-            "validation_file_fallback" if config.data.validation_file else "split_from_train_fallback"
+            "validation_file_fallback"
+            if config.data.validation_file
+            else "split_from_train_fallback"
         )
     if config.evaluation.max_examples:
         held_out = held_out[: config.evaluation.max_examples]
