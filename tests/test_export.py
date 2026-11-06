@@ -261,7 +261,17 @@ def test_adapter_export_can_skip_model_reload_when_configured(tmp_path: Path, mo
     config = make_config(tmp_path)
     config.export.verify_reload = False
     directory = write_minimal_adapter(tmp_path / "adapter")
-    monkeypatch.setattr(export_module.AutoTokenizer, "from_pretrained", lambda *_a, **_k: object())
+
+    class FakeTokenizer:
+        pad_token_id = 0
+        eos_token_id = 1
+
+        def __len__(self):
+            return 10
+
+    monkeypatch.setattr(
+        export_module.AutoTokenizer, "from_pretrained", lambda *_a, **_k: FakeTokenizer()
+    )
     monkeypatch.setattr(safetensors_torch, "load_file", lambda *_a, **_k: {"lora": torch.ones(2)})
 
     def unexpected_load(*_args, **_kwargs):
