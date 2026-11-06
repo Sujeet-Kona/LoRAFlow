@@ -284,6 +284,16 @@ def audit(track, data):
             severity, category, action = (part.split("=", 1)[1] for part in parts)
             if severity not in ACTIONS or category not in CATEGORIES:
                 raise ValueError("Unknown target label")
+            concept_category = next(
+                category_name
+                for category_name, phrases in CONCEPTS.items()
+                if matches[0] in phrases
+            )
+            if category != concept_category:
+                raise ValueError(
+                    f"{track}/{split}: category label {category!r} does not "
+                    f"match concept category {concept_category!r}"
+                )
             if ACTIONS[severity] != action:
                 raise ValueError("Target action does not match severity")
             counts[severity] += 1
