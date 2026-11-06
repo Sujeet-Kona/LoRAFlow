@@ -119,13 +119,9 @@ def test_v4_audit_rejects_category_label_that_conflicts_with_concept() -> None:
         audit("A", data)
 
 
-
 def test_v4_audit_rejects_severity_label_that_conflicts_with_input_cues() -> None:
     data = _make_data("C", (60, 24, 24), 81)
-    row = next(
-        item for item in data["train"]
-        if item["output"].startswith("sev=routine ")
-    )
+    row = next(item for item in data["train"] if item["output"].startswith("sev=routine "))
     _, category, _ = row["output"].split()
     row["output"] = f"sev=urgent {category} act=flag_vet_now"
 
@@ -136,9 +132,7 @@ def test_v4_audit_rejects_severity_label_that_conflicts_with_input_cues() -> Non
 def test_v4_audit_rejects_missing_severity_cue() -> None:
     data = _make_data("C", (60, 24, 24), 91)
     row = data["test"][0]
-    row["input"] = row["input"].replace(
-        "the animal barely responds and is extremely hot. ", "", 1
-    )
+    row["input"] = row["input"].replace("the animal barely responds and is extremely hot. ", "", 1)
 
     with pytest.raises(ValueError, match="Expected exactly one systemic cue"):
         audit("C", data)
