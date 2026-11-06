@@ -11,7 +11,7 @@ Everything comes from a fixed seed, so rerunning the script reproduces the
 exact same files.
 
 Usage:
-    python scripts/make_dataset.py --out-dir data --train 480 --validation 120
+    python scripts/make_dataset.py --out-dir data --train 480 --validation 120 --test 120
 """
 
 from __future__ import annotations
