@@ -96,10 +96,10 @@ def prepare_splits(config: AppConfig) -> tuple[list[Example], list[Example]]:
 def to_hf_dataset(examples: list[Example]) -> Dataset:
     """Build TRL's prompt-completion layout.
 
-    TRL tokenises prompt and completion separately and, with
-    ``completion_only_loss=True``, masks the prompt positions, so the loss is
-    computed over answers only. It also appends the EOS token to each
-    completion, which is what lets the served model stop by itself.
+    TRL appends EOS to each non-conversational completion, tokenizes the
+    prompt and full prompt-plus-completion, then finds their common token
+    prefix to build the completion mask. With ``completion_only_loss=True``,
+    the loss is computed over answer tokens, including EOS.
     """
 
     return Dataset.from_dict(
@@ -138,17 +138,20 @@ def load_tokenizer(model_name: str, *, trust_remote_code: bool = False) -> AutoT
 def validate_examples_fit(tokenizer: Any, examples: list[Example], *, max_length: int) -> None:
     """Reject examples that TRL would silently truncate during SFT preprocessing."""
 
-    prompts = tokenizer([example.prompt for example in examples], add_special_tokens=False)[
-        "input_ids"
+    eos_token = tokenizer.eos_token
+    full_texts = [
+        example.prompt
+        + example.completion
+        + (
+            eos_token
+            if eos_token is not None and not example.completion.endswith(eos_token)
+            else ""
+        )
+        for example in examples
     ]
-    completions = tokenizer([example.completion for example in examples], add_special_tokens=False)[
-        "input_ids"
-    ]
-    eos_id = tokenizer.eos_token_id
-    for example, prompt_ids, completion_ids in zip(examples, prompts, completions, strict=True):
-        total = len(prompt_ids) + len(completion_ids)
-        if eos_id is not None and (not completion_ids or completion_ids[-1] != eos_id):
-            total += 1  # TRL appends EOS to the completion.
+    full_sequences = tokenizer(full_texts, add_special_tokens=False)["input_ids"]
+    for example, input_ids in zip(examples, full_sequences, strict=True):
+        total = len(input_ids)
         if total > max_length:
             raise ValueError(
                 f"Example on source line {example.source_line} needs {total} tokens "
