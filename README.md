@@ -20,7 +20,7 @@ No external benchmark is reproduced and no accuracy is claimed beyond this synth
 | Merged export | 494,032,768 params; `max_logit_delta` 0.000303 against tolerance 0.05, measured on a real held-out prompt before and after `merge_and_unload` |
 | Serving | `/health`, `/generate`, `/metrics` verified live against the adapter on `mps`; malformed bodies rejected with 422, an over-long prompt with 400, unknown routes with 404 |
 | Tracking | `loraflow mlflow-ui` serves the SQLite store; five finished runs (two `train`, three `evaluate`) listed through its REST API, with the adapter directory and each JSON report attached as an artifact |
-| Tests | 120 passing (`pytest`), `ruff check` and `ruff format --check` clean |
+| Tests | module-focused pytest suite; Ruff lint and format checks |
 | CPU path | `configs/ci_smoke.yaml` on `sshleifer/tiny-gpt2`: `cpu` + `torch.float32`, 2 steps, `train_loss` 10.83, accuracy deltas `+0.0000` — plumbing verified, learning is not the point of that config |
 
 **Provenance and reproducibility.** Every figure above was produced from the current tree. The 90-step
