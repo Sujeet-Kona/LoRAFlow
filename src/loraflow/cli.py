@@ -79,6 +79,16 @@ def command_data_check(args: argparse.Namespace) -> int:
         "sample_prompt": train[0].prompt,
         "sample_completion": train[0].completion,
     }
+    if data.test_file is not None:
+        test = load_examples(
+            data.test_file,
+            instruction_field=data.instruction_field,
+            input_field=data.input_field,
+            output_field=data.output_field,
+            template=data.prompt_template,
+        )
+        payload["test"] = dataset_report(test)
+        payload["test_source"] = "test_file"
     print(json.dumps(payload, indent=2, default=str))
     return 0
 
