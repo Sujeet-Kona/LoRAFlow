@@ -8,7 +8,7 @@ from pathlib import Path
 
 SPLITS = ("train", "validation", "test")
 TRACKS = ("a", "b", "c")
-DATA_ROOT = Path(__file__).resolve().parents[2] / "data" / "v4-prompt-v2"
+DATA_ROOT = Path.cwd() / "data" / "v4-prompt-v2"
 
 
 def verify_track(data_root: Path, track: str) -> dict[str, int]:
