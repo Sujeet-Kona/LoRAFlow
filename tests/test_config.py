@@ -59,3 +59,26 @@ def test_data_config_rejects_non_positive_validation_size() -> None:
         AppConfig.model_validate(
             {**valid_config(), "data": {"train_file": "train.jsonl", "validation_size": 0}}
         )
+
+
+def test_config_rejects_fractional_absolute_validation_count() -> None:
+    with pytest.raises(ValidationError, match="whole example count"):
+        AppConfig.model_validate(
+            {**valid_config(), "data": {"train_file": "train.jsonl", "validation_size": 2.5}}
+        )
+
+
+@pytest.mark.parametrize("port", [0, 65536])
+def test_config_rejects_invalid_serving_port(port: int) -> None:
+    with pytest.raises(ValidationError):
+        AppConfig.model_validate(
+            {
+                **valid_config(),
+                "serving": {"port": port},
+            }
+        )
+
+
+def test_config_rejects_empty_lora_target_modules() -> None:
+    with pytest.raises(ValidationError):
+        AppConfig.model_validate({**valid_config(), "lora": {"target_modules": []}})
