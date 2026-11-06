@@ -286,9 +286,7 @@ def lexical_baseline(
         for key, value in _parse_output_fields(output).items():
             train_field_counts[key][value] += 1
     field_majority = {
-        key: counts.most_common(1)[0][0]
-        for key, counts in train_field_counts.items()
-        if counts
+        key: counts.most_common(1)[0][0] for key, counts in train_field_counts.items() if counts
     }
     neighbour_exact = 0
     majority_exact = 0
