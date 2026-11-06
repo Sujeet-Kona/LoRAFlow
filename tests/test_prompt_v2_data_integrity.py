@@ -1,7 +1,7 @@
 import hashlib
 import json
-from runpy import run_path
 from pathlib import Path
+from runpy import run_path
 
 import pytest
 
