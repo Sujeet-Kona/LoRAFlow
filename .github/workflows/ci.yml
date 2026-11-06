@@ -65,7 +65,16 @@ jobs:
       - run: pytest -q
 
       - name: Regenerate the demo corpus
-        run: python scripts/make_dataset.py --out-dir data
+        run: python scripts/make_dataset.py --out-dir data/v3
+
+      - name: Audit held-out symptom concepts and baselines
+        run: |
+          python scripts/audit_dataset.py \
+            --train data/v3/train.jsonl \
+            --held validation=data/v3/validation.jsonl \
+            --held test=data/v3/test.jsonl \
+            --manifest data/v3/manifest.json \
+            --output artifacts/ci-smoke/dataset_audit.json
 
       - name: Validate dataset and split
         run: loraflow data-check --config configs/ci_smoke.yaml
