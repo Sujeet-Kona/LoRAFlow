@@ -1,5 +1,7 @@
 # LoRAFlow
 
+[![LoRAFlow CI](https://github.com/Sujeet-Kona/LoRAFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/Sujeet-Kona/LoRAFlow/actions/workflows/ci.yml)
+
 An independently implemented, modular pipeline for preparing datasets, fine-tuning language models with LoRA, evaluating base and adapted models, exporting adapters, and serving inference APIs.
 
 > **Status:** The pipeline runs end to end and has been verified on an Apple M4 (16 GB) with MPS and CPU. Training, evaluation, tracking, export, and serving each completed real runs whose numbers are recorded below and on disk. It is **not** production-ready: the task is a small synthetic corpus, the model is a 0.5B toy, and single-host only.
