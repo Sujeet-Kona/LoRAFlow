@@ -85,7 +85,7 @@ class TrainingConfig(BaseModel):
     run_name: str | None = None
 
     @model_validator(mode="after")
-    def checkpoint_intervals_must_align(self) -> TrainingConfig:
+    def checkpoint_intervals_must_align(self):
         if self.save_steps % self.eval_steps != 0:
             raise ValueError(
                 "training.save_steps must be a multiple of training.eval_steps "
