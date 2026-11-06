@@ -49,6 +49,14 @@ def test_scoring_row_preserves_full_completion() -> None:
     assert labels == [IGNORE_INDEX, IGNORE_INDEX, 3, 4]
 
 
+def test_completion_with_eos_appends_only_when_missing() -> None:
+    from loraflow.evaluation import _completion_with_eos
+
+    assert _completion_with_eos([3, 4], 2) == [3, 4, 2]
+    assert _completion_with_eos([3, 2], 2) == [3, 2]
+    assert _completion_with_eos([3, 4], None) == [3, 4]
+
+
 def test_answer_labels_masks_everything_before_the_completion() -> None:
     prompt_ids = [1, 2, 3, 4]
     completion_ids = [5, 6]
