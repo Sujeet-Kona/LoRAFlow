@@ -140,9 +140,9 @@ ANIMAL_IDS = tuple(f"A{i:03d}" for i in range(1, 241))
 MAX_UNIQUE_NOTES = (
     len(ANIMAL_IDS)
     * sum(len(values) for values in SYMPTOMS.values())
-    * len(SYSTEMIC_STATES)
-    * len(FUNCTION_STATES)
-    * len(TRAJECTORY_STATES)
+    * 2  # two paraphrases for each of the three independently sampled attributes
+    * 2
+    * 2
 )
 
 
@@ -250,7 +250,7 @@ def write_jsonl(path: Path, records: list[dict[str, Any]]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out-dir", type=Path, default=Path("data"))
+    parser.add_argument("--out-dir", type=Path, default=Path("data/v2"))
     parser.add_argument("--train", type=int, default=480)
     parser.add_argument("--validation", type=int, default=120)
     parser.add_argument("--test", type=int, default=120)
