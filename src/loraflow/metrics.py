@@ -122,7 +122,7 @@ def token_accuracy(
 
     correct = 0
     total = 0
-    for index, (predicted, label) in enumerate(zip(logits_argmax, labels, strict=False)):
+    for index, (predicted, label) in enumerate(zip(logits_argmax, labels, strict=True)):
         if label == ignore_index:
             continue
         if index == 0:
