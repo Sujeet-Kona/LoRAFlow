@@ -429,7 +429,8 @@ def _trl_version() -> str:
 
 
 def _free_memory(device: str) -> None:
+    """Release cached accelerator memory only when that backend is active."""
     if device == "cuda":
         torch.cuda.empty_cache()
-    elif hasattr(torch, "mps"):
+    elif device == "mps" and torch.backends.mps.is_available():
         torch.mps.empty_cache()
