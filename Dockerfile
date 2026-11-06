@@ -22,7 +22,7 @@ RUN pip install -e ".[train,serve]"
 
 COPY configs ./configs
 COPY scripts ./scripts
-COPY data ./data
+# Dataset files are generated or mounted at runtime; they are intentionally not in Git.
 
 EXPOSE 8000
 
