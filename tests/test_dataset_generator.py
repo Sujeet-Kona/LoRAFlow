@@ -1,8 +1,13 @@
 """Tests for the deterministic synthetic corpus generator."""
 
+import runpy
+from pathlib import Path
+
 import pytest
 
-from scripts.make_dataset import make_records
+make_records = runpy.run_path(
+    str(Path(__file__).resolve().parents[1] / "scripts" / "make_dataset.py")
+)["make_records"]
 
 
 def test_generated_partitions_are_exact_note_disjoint() -> None:
