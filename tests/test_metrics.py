@@ -149,14 +149,16 @@ def test_structured_output_scores_detect_malformed_and_missing_fields() -> None:
             "answer: sev=watch cat=skin act=recheck_12h",
             "sev=critical cat=skin act=flag_vet_now",
             "sev=watch\ncat=skin act=recheck_12h",
+            "sev=watch cat=skin act=recheck_12h extra=foo",
         ]
     )
 
     assert scores["valid"] == 1
-    assert scores["malformed"] == 5
+    assert scores["malformed"] == 6
     assert scores["missing_fields"]["act"] == 1
     assert scores["duplicate_keys"] == 1
     assert scores["invalid_values"]["sev"]["critical"] == 1
+    assert scores["unexpected_fields"]["extra"] == 1
 
 
 def test_format_delta_shows_both_ends() -> None:
