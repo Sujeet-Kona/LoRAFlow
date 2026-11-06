@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, PositiveInt
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt, field_validator
 
 DeviceName = Literal["auto", "cpu", "mps", "cuda"]
 DtypeName = Literal["auto", "fp32", "bf16", "fp16"]
@@ -36,6 +36,13 @@ class DataConfig(BaseModel):
     )
     max_train_examples: PositiveInt | None = None
 
+    @field_validator("validation_size")
+    @classmethod
+    def absolute_validation_size_must_be_an_integer(cls, value: float) -> float:
+        if value >= 1 and not value.is_integer():
+            raise ValueError("validation_size must be a whole example count when >= 1")
+        return value
+
 
 class LoRAConfig(BaseModel):
     """Low-rank adapter configuration."""
@@ -45,7 +52,9 @@ class LoRAConfig(BaseModel):
     rank: PositiveInt = 8
     alpha: PositiveInt = 16
     dropout: float = Field(default=0.05, ge=0.0, lt=1.0)
-    target_modules: list[str] = Field(default_factory=lambda: ["q_proj", "v_proj"])
+    target_modules: list[str] = Field(
+        default_factory=lambda: ["q_proj", "v_proj"], min_length=1
+    )
 
 
 class TrainingConfig(BaseModel):
@@ -68,7 +77,7 @@ class TrainingConfig(BaseModel):
     warmup_steps: int = Field(default=0, ge=0)
     weight_decay: float = Field(default=0.0, ge=0.0)
     lr_scheduler: str = "linear"
-    max_steps: int = -1
+    max_steps: int = Field(default=-1, ge=-1)
     logging_steps: PositiveInt = 10
     save_steps: PositiveInt = 500
     eval_steps: PositiveInt = 25
@@ -129,7 +138,7 @@ class ServingConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     host: str = "127.0.0.1"
-    port: PositiveInt = 8000
+    port: int = Field(default=8000, ge=1, le=65535)
     device: DeviceName = "auto"
     max_new_tokens: PositiveInt = 64
     max_input_chars: PositiveInt = 4000
