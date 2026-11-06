@@ -100,7 +100,9 @@ def test_evaluate_rejects_negative_generation_count(tmp_path: Path) -> None:
 
 
 
-def test_free_memory_does_not_call_mps_without_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_free_memory_does_not_call_mps_without_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
 
     def unexpected_empty_cache() -> None:
