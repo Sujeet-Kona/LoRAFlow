@@ -57,17 +57,17 @@ Macro-F1 weights categories equally, but per-class recall is estimated from only
 
 ## Dataset and nearest-neighbour audit
 
-The audit reports zero exact duplicate notes in each 150-example test split. A separate nearest-neighbour similarity audit sampled 60 test notes per track:
+The audit reports zero exact duplicate notes in each 150-example test split. An exhaustive word-level Jaccard audit compares every held-out test note against all 600 training notes per track:
 
-| Track | 1-NN exact match | Sampled test notes with train Jaccard >= 0.9 | Mean best Jaccard |
+| Track | 1-NN exact match | Test notes with train Jaccard >= 0.9 | Mean best Jaccard |
 | --- | ---: | ---: | ---: |
-| A | 29.33% | 11/60 (18.33%) | 0.8277 |
-| B | 54.00% | 0/60 (0%) | 0.2445 |
-| C | 20.00% | 0/60 (0%) | 0.1798 |
+| A | 29.33% | 21/150 (14.00%) | 0.8239 |
+| B | 54.00% | 0/150 (0%) | 0.2493 |
+| C | 20.00% | 0/150 (0%) | 0.1825 |
 
-Track A therefore has no exact duplicate leakage, but the sampled near-duplicate signal is non-trivial and must be disclosed. Its unseen-concept framing is not a clean semantic generalization claim. Track B intentionally shares symptom concepts across splits, which helps explain why nearest-neighbour retrieval can recover category labels; the intended shift is severity-cue wording. Track C combines concept and severity wording shifts and is the most difficult condition.
+Track A has no exact duplicate leakage, but the exhaustive audit finds 21/150 (14.00%) held-out notes with a training neighbour at Jaccard >= 0.9. Its mean best-neighbour similarity is 0.8239. This is substantial lexical overlap and means the unseen-concept framing must not be presented as clean semantic generalization. Track B intentionally shares symptom concepts across splits; Track C holds out both concept and severity wording and has the lowest mean similarity.
 
-These nearest-neighbour figures are from a 60-note audit sample, not all 150 test examples. The Jaccard threshold is a diagnostic, not a proof of semantic equivalence.
+These figures cover all 150 test notes against all 600 training notes per track. Jaccard is a lexical diagnostic, not proof of semantic equivalence. Reproduce the audit with `python scripts/audit_prompt_v2_neighbours.py`; the script uses the shared `loraflow.audit.note_tokens` implementation and writes a machine-readable JSON report. CI runs this audit on every change.
 
 ## Training and artifact provenance
 
