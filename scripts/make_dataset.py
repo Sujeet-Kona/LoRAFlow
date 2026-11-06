@@ -341,7 +341,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()
 
-    # Separate split-specific language families plus exact-note disjointness.
+    # Each split gets distinct symptom concepts; exact-note disjointness is an extra guard.
     seen_notes: set[str] = set()
     train = make_records(args.train, args.seed, seen_notes=seen_notes, split="train")
     validation = make_records(
@@ -370,7 +370,7 @@ def main() -> None:
     }
     args.out_dir.mkdir(parents=True, exist_ok=True)
     (args.out_dir / "manifest.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\\n", encoding="utf-8"
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print(
         f"wrote {len(train)} train + {len(validation)} validation + "
