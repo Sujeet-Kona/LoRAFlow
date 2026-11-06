@@ -133,10 +133,24 @@ def labelled_note(rng: random.Random) -> tuple[str, str, str]:
     return build_note(rng, category, severity), category, severity
 
 
-def make_records(count: int, seed: int) -> list[dict[str, Any]]:
+def make_records(
+    count: int, seed: int, *, seen_notes: set[str] | None = None
+) -> list[dict[str, Any]]:
+    """Generate unique records, optionally sharing a uniqueness set across splits."""
+    maximum_unique_notes = len(ANIMAL_IDS) * sum(
+        len(CATEGORY_CUES.get(category, UNKNOWN_SUBJECTS)) for category in CATEGORIES
+    ) * sum(len(cues) for cues in SEVERITY_CUES.values())
+    if count < 1:
+        raise ValueError("record count must be at least 1")
+    if count > maximum_unique_notes:
+        raise ValueError(
+            f"requested {count} records, but the generator has only "
+            f"{maximum_unique_notes} unique note combinations"
+        )
+
     rng = random.Random(seed)
     records = []
-    seen: set[str] = set()
+    seen = seen_notes if seen_notes is not None else set()
     while len(records) < count:
         note, category, severity = labelled_note(rng)
         if note in seen:
@@ -170,10 +184,12 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()
 
-    train = make_records(args.train, seed=args.seed)
-    # Separate seeds keep exact notes disjoint across the three partitions.
-    validation = make_records(args.validation, seed=args.seed + 1)
-    test = make_records(args.test, seed=args.seed + 2)
+    # Independent random seeds improve variation; a shared set guarantees that
+    # no exact note can leak between train, validation, and test.
+    seen_notes: set[str] = set()
+    train = make_records(args.train, seed=args.seed, seen_notes=seen_notes)
+    validation = make_records(args.validation, seed=args.seed + 1, seen_notes=seen_notes)
+    test = make_records(args.test, seed=args.seed + 2, seen_notes=seen_notes)
 
     write_jsonl(args.out_dir / "train.jsonl", train)
     write_jsonl(args.out_dir / "validation.jsonl", validation)
