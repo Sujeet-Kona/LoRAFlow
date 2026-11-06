@@ -44,7 +44,7 @@ pip install -e ".[train,serve]"    # ML stages
 ```
 
 ```bash
-python scripts/make_dataset.py                 # deterministic 480 train / 120 validation JSONL
+python scripts/make_dataset.py                 # deterministic 480 train / 120 validation / 120 test JSONL
 loraflow data-check --config configs/train.yaml
 loraflow train      --config configs/train.yaml
 loraflow evaluate   --config configs/train.yaml
@@ -102,7 +102,7 @@ LoRAFlow/
 │   ├── export.py                adapter export, merged export with logit check
 │   ├── api.py                   FastAPI app, Prometheus metrics, model service
 │   └── cli.py                   data-check | train | evaluate | export | serve | mlflow-ui
-├── tests/                       154 test cases, one file per module
+├── tests/                       module-focused unit and integration tests
 ├── Dockerfile / docker-compose.yml
 └── pyproject.toml
 ```
