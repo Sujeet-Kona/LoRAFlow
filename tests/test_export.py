@@ -230,8 +230,12 @@ def test_adapter_export_reload_loads_base_and_applies_adapter(tmp_path: Path, mo
             calls.append(("adapter",))
             return FakeModel()
 
-    monkeypatch.setattr(export_module.AutoTokenizer, "from_pretrained", lambda *_a, **_k: FakeTokenizer())
-    monkeypatch.setattr(export_module.AutoModelForCausalLM, "from_pretrained", lambda *_a, **_k: FakeModel())
+    monkeypatch.setattr(
+        export_module.AutoTokenizer, "from_pretrained", lambda *_a, **_k: FakeTokenizer()
+    )
+    monkeypatch.setattr(
+        export_module.AutoModelForCausalLM, "from_pretrained", lambda *_a, **_k: FakeModel()
+    )
     monkeypatch.setattr(PeftModel, "from_pretrained", FakePeftModel.from_pretrained)
     monkeypatch.setattr(safetensors_torch, "load_file", lambda *_a, **_k: {"lora": torch.ones(2)})
     monkeypatch.setattr(export_module, "_free_memory", lambda _device: None)
