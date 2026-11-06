@@ -25,7 +25,10 @@ def verify_track(track: str) -> dict[str, int]:
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest.get("track") != track.upper():
-        raise ValueError(f"{manifest_path}: expected track {track.upper()!r}, found {manifest.get('track')!r}")
+        raise ValueError(
+            f"{manifest_path}: expected track {track.upper()!r}, "
+            f"found {manifest.get('track')!r}"
+        )
 
     counts = manifest.get("counts")
     hashes = manifest.get("sha256")
@@ -42,7 +45,10 @@ def verify_track(track: str) -> dict[str, int]:
         actual_hash = hashlib.sha256(raw).hexdigest()
         expected_hash = hashes.get(split)
         if actual_hash != expected_hash:
-            raise ValueError(f"{path}: SHA-256 mismatch; expected {expected_hash}, got {actual_hash}")
+            raise ValueError(
+                f"{path}: SHA-256 mismatch; expected {expected_hash}, "
+                f"got {actual_hash}"
+            )
 
         rows = [line for line in raw.splitlines() if line.strip()]
         expected_count = counts.get(split)
