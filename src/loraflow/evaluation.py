@@ -101,7 +101,8 @@ def score_teacher_forcing(
 
     model.eval()
     pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0
-    losses: list[float] = []
+    total_loss = 0.0
+    examples_scored = 0
     correct = 0
     scored_tokens = 0
 
@@ -155,20 +156,23 @@ def score_teacher_forcing(
             count = int(mask.sum())
             if count == 0:
                 continue
-            losses.append(float(per_position[row][mask].mean()))
+            total_loss += float(per_position[row][mask].sum())
+            examples_scored += 1
             row_logits = logits[row, :-1, :][mask]
             correct += int((row_logits.argmax(dim=-1) == labels_tensor[row][mask]).sum())
             scored_tokens += count
 
-    if not losses:
+    if not scored_tokens:
         raise ValueError(
             "Teacher forcing scored no answer tokens; the prompt template must "
             "leave a completion span after tokenisation."
         )
 
-    mean_loss = sum(losses) / len(losses)
+    # Aggregate token NLL globally; averaging per-example means would give
+    # short completions the same weight as long completions.
+    mean_loss = total_loss / scored_tokens
     return {
-        "examples_scored": len(losses),
+        "examples_scored": examples_scored,
         "answer_tokens": scored_tokens,
         "mean_answer_loss": round(mean_loss, 6),
         "perplexity": round(perplexity_from_loss(mean_loss), 4),
@@ -206,7 +210,11 @@ def generate_answers(
             kwargs: dict[str, Any] = {
                 "max_new_tokens": max_new_tokens,
                 "do_sample": do_sample,
-                "pad_token_id": tokenizer.pad_token_id or tokenizer.eos_token_id,
+                "pad_token_id": (
+                    tokenizer.pad_token_id
+                    if tokenizer.pad_token_id is not None
+                    else tokenizer.eos_token_id
+                ),
             }
             if do_sample:
                 kwargs["temperature"] = temperature
