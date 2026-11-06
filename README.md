@@ -16,7 +16,7 @@ No external benchmark is reproduced and no accuracy is claimed beyond this synth
 | LoRA training | `Qwen/Qwen2.5-0.5B`, rank 8 / alpha 16 on `q_proj,v_proj`; 540,672 trainable of 494,573,440 params (0.109%); 3 epochs = 90 steps; `mps` + `torch.float32`; seed 42; 413 s wall clock; `train_loss` 0.8618; best held-out `eval_loss` 0.1346336007118225 at `checkpoint-90` |
 | Baseline vs fine-tuned (same 120 held-out examples) | mean answer-token loss `4.0200 → 0.1490`; perplexity `55.6996 → 1.1606`; answer-token accuracy `0.4645 → 0.9551`; exact match `0.0000 → 0.5000`; 3-token prefix match `0.0000 → 0.5000` |
 | Per-field generation accuracy (24 greedy outputs) | `sev=` `0.0 → 0.875`, `cat=` `0.0 → 0.5417`, `act=` `0.0 → 0.875` |
-| Adapter export | 5 files copied, 540,672 adapter params; exported adapter reloaded onto its recorded base model and passed a forward check (`Qwen2Tokenizer`, vocab 151,665, pad/eos 151,643) |
+| Adapter export | 5 adapter/tokenizer files copied, 540,672 adapter params; CI now reloads the exported adapter onto its recorded base model and runs a forward check (`Qwen2Tokenizer`, vocab 151,665, pad/eos 151,643) |
 | Merged export | 494,032,768 params; `max_logit_delta` 0.000303 against tolerance 0.05, measured on a real held-out prompt before and after `merge_and_unload` |
 | Serving | `/health`, `/generate`, `/metrics` verified live against the adapter on `mps`; malformed bodies rejected with 422, an over-long prompt with 400, unknown routes with 404 |
 | Tracking | `loraflow mlflow-ui` serves the SQLite store; five finished runs (two `train`, three `evaluate`) listed through its REST API, with the adapter directory and each JSON report attached as an artifact |
@@ -50,7 +50,7 @@ loraflow train      --config configs/train.yaml
 loraflow evaluate   --config configs/train.yaml
 loraflow export     --config configs/train.yaml              # adapter + tokenizer; refuses to replace an existing export
 loraflow export     --config configs/train.yaml --overwrite  # explicitly replace the adapter export
-loraflow export     --config configs/train.yaml --merged     # merged standalone weights
+loraflow export     --config configs/train.yaml --merged --overwrite  # replace merged standalone export
 loraflow serve      --config configs/train.yaml --port 8125
 loraflow mlflow-ui                                             # tracked runs and metrics
 pytest
