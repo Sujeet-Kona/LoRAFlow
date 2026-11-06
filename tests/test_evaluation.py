@@ -8,9 +8,8 @@ import json
 from pathlib import Path
 
 import pytest
-import torch
 
-pytest.importorskip("torch")
+torch = pytest.importorskip("torch")
 pytest.importorskip("peft")
 
 from loraflow.config import AppConfig, DataConfig, EvaluationConfig, TrainingConfig  # noqa: E402
