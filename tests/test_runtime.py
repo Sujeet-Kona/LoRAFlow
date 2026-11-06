@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
@@ -107,3 +108,11 @@ def test_write_json_failure_is_visible(tmp_path: Path) -> None:
 
     with pytest.raises(OSError):
         write_json(blocked / "report.json", {"a": 1})
+
+
+def test_set_global_seed_makes_numpy_draws_repeatable() -> None:
+    set_global_seed(321, "cpu")
+    first = np.random.random(4)
+    set_global_seed(321, "cpu")
+    second = np.random.random(4)
+    assert np.array_equal(first, second)
