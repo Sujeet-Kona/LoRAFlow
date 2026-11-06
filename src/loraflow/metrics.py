@@ -196,7 +196,9 @@ def classification_scores(
             labels.append("__invalid__")
         matrix = {gold: {pred: 0 for pred in labels} for gold in labels}
         for gold, pred in zip(expected, actual, strict=True):
-            matrix[gold if gold in matrix else "__invalid__"][pred if pred in labels else "__invalid__"] += 1
+            matrix[gold if gold in matrix else "__invalid__"][
+                pred if pred in labels else "__invalid__"
+            ] += 1
         per_class = {}
         f1_values = []
         for label in known_labels:
@@ -213,9 +215,7 @@ def classification_scores(
                 "support": support,
             }
             f1_values.append(f1)
-        correct = sum(
-            gold == pred for gold, pred in zip(expected, actual, strict=True)
-        )
+        correct = sum(gold == pred for gold, pred in zip(expected, actual, strict=True))
         results[name] = {
             "correct": correct,
             "total": len(golds),
