@@ -2,7 +2,6 @@ data:
   train_file: data/train.jsonl
   validation_file: data/validation.jsonl
   test_file: data/test.jsonl
-  text_field: text
   max_seq_length: 256
 
   instruction_field: instruction
