@@ -58,6 +58,11 @@ _METRIC_MARKERS = (
     "examples",
     "chars",
     "predictions",
+    "f1",
+    "precision",
+    "recall",
+    "valid",
+    "malformed",
 )
 
 
