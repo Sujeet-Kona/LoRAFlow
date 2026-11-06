@@ -159,7 +159,11 @@ def test_build_sft_config_translates_training_knobs(tmp_path: Path) -> None:
     assert args.completion_only_loss is True
     assert args.remove_unused_columns is False
     assert args.eval_strategy == "steps"
-    assert args.save_strategy == "epoch"
+    assert args.save_strategy == "steps"
+    assert args.save_steps == config.training.save_steps
+    assert args.load_best_model_at_end is True
+    assert args.metric_for_best_model == "eval_loss"
+    assert args.greater_is_better is False
     assert args.report_to == []
 
 
