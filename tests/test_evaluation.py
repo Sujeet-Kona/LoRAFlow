@@ -99,7 +99,6 @@ def test_evaluate_rejects_negative_generation_count(tmp_path: Path) -> None:
         evaluate_config(config, adapter_dir=adapter)
 
 
-
 def test_free_memory_does_not_call_mps_without_backend(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
