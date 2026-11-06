@@ -61,9 +61,7 @@ def verify_track(track: str) -> dict[str, int]:
             try:
                 record = json.loads(line)
             except json.JSONDecodeError as exc:
-                raise ValueError(
-                    f"{path}:{line_number}: invalid JSON: {exc}"
-                ) from exc
+                raise ValueError(f"{path}:{line_number}: invalid JSON: {exc}") from exc
             required = {"instruction", "input", "output"}
             if not isinstance(record, dict) or not required.issubset(record):
                 raise ValueError(
