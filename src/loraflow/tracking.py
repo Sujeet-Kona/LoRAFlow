@@ -9,6 +9,7 @@ than swallowed, because a silently missing run is worse than a loud one.
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -115,7 +116,9 @@ class MLflowTracker:
         self._run: Any = None
         self._owns_run = False
 
-        tracking_uri = config.tracking.tracking_uri
+        tracking_uri = os.environ.get(
+            "LORAFLOW_MLFLOW_TRACKING_URI", config.tracking.tracking_uri
+        )
         # A relative sqlite/file URI resolves against the process working
         # directory; normalise it so `mlflow ui` finds the store from anywhere.
         if tracking_uri.startswith("file://"):
@@ -131,9 +134,12 @@ class MLflowTracker:
         client = mlflow.MlflowClient()
         experiment_name = config.tracking.experiment_name
         desired_location: str | None = None
-        if config.tracking.artifacts_dir:
+        artifacts_uri = os.environ.get(
+            "LORAFLOW_MLFLOW_ARTIFACTS_DIR", config.tracking.artifacts_dir
+        )
+        if artifacts_uri:
             self.artifact_dir = (
-                Path(config.tracking.artifacts_dir.removeprefix("file://")).expanduser().resolve()
+                Path(artifacts_uri.removeprefix("file://")).expanduser().resolve()
             )
             desired_location = "file://" + str(self.artifact_dir)
 
