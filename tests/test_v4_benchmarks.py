@@ -131,10 +131,14 @@ def test_v4_audit_rejects_severity_label_that_conflicts_with_input_cues() -> Non
 
 def test_v4_audit_rejects_missing_severity_cue() -> None:
     data = _make_data("C", (60, 24, 24), 91)
-    row = data["test"][0]
+    row = next(
+        item
+        for item in data["test"]
+        if "the animal barely responds and is extremely hot. " in item["input"]
+    )
     row["input"] = row["input"].replace("the animal barely responds and is extremely hot. ", "", 1)
 
-    with pytest.raises(ValueError, match="Expected exactly one systemic cue"):
+    with pytest.raises(ValueError, match="exactly three cue segments"):
         audit("C", data)
 
 
