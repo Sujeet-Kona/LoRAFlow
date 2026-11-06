@@ -5,41 +5,49 @@ services:
     ports:
       - "8000:8000"
     environment:
-      LORAFLOW_CONFIG: configs/train.yaml
       HF_HOME: /data/huggingface
-      # CPU threads: leave unset to let torch decide on the host.
       TORCH_NUM_THREADS: "4"
     volumes:
       - hf-cache:/data/huggingface
       - ./artifacts:/app/artifacts
       - ./data:/app/data
+      - ./mlflow.db:/app/mlflow.db
+      - ./mlartifacts:/app/mlartifacts
     command: ["loraflow", "serve", "--config", "configs/train.yaml", "--host", "0.0.0.0", "--port", "8000"]
 
-  # One-shot pipeline stages. Use `docker compose run --rm train`.
+  # One-shot pipeline stages. Each service can build the same image itself.
   train:
+    build: .
     image: loraflow:local
     profiles: ["pipeline"]
     volumes:
       - hf-cache:/data/huggingface
       - ./artifacts:/app/artifacts
       - ./data:/app/data
+      - ./mlflow.db:/app/mlflow.db
+      - ./mlartifacts:/app/mlartifacts
     command: ["loraflow", "train", "--config", "configs/train.yaml"]
 
   evaluate:
+    build: .
     image: loraflow:local
     profiles: ["pipeline"]
     volumes:
       - hf-cache:/data/huggingface
       - ./artifacts:/app/artifacts
       - ./data:/app/data
+      - ./mlflow.db:/app/mlflow.db
+      - ./mlartifacts:/app/mlartifacts
     command: ["loraflow", "evaluate", "--config", "configs/train.yaml"]
 
   export:
+    build: .
     image: loraflow:local
     profiles: ["pipeline"]
     volumes:
       - hf-cache:/data/huggingface
       - ./artifacts:/app/artifacts
+      - ./data:/app/data
     command: ["loraflow", "export", "--config", "configs/train.yaml"]
 
   mlflow:
@@ -48,13 +56,20 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./mlflow.db:/mlflow.db
-      - ./mlartifacts:/mlartifacts
-    # Both paths must match what the container writes, or runs land in a store
-    # the UI is not showing.
-    command: ["mlflow", "ui", "--host", "0.0.0.0", "--port", "5000",
-              "--backend-store-uri", "sqlite:////mlflow.db",
-              "--default-artifact-root", "file:///mlartifacts"]
+      # These paths must match the training container's resolved paths.
+      - ./mlflow.db:/app/mlflow.db
+      - ./mlartifacts:/app/mlartifacts
+    command:
+      - mlflow
+      - ui
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --backend-store-uri
+      - sqlite:////app/mlflow.db
+      - --default-artifact-root
+      - file:///app/mlartifacts
 
 volumes:
   hf-cache:
