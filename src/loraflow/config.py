@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, PositiveInt, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt, field_validator, model_validator
 
 DeviceName = Literal["auto", "cpu", "mps", "cuda"]
 DtypeName = Literal["auto", "fp32", "bf16", "fp16"]
@@ -58,7 +58,7 @@ class LoRAConfig(BaseModel):
 class TrainingConfig(BaseModel):
     """Training run configuration."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     base_model: str
     output_dir: Path = Path("artifacts")
@@ -83,6 +83,15 @@ class TrainingConfig(BaseModel):
     gradient_checkpointing: bool = False
     # Optional cap to keep a smoke run short without editing epochs.
     run_name: str | None = None
+
+    @model_validator(mode="after")
+    def checkpoint_intervals_must_align(self) -> TrainingConfig:
+        if self.save_steps % self.eval_steps != 0:
+            raise ValueError(
+                "training.save_steps must be a multiple of training.eval_steps "
+                "when checkpoint selection uses evaluation loss"
+            )
+        return self
 
 
 class EvaluationConfig(BaseModel):
