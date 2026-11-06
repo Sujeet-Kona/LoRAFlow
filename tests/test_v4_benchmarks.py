@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections import Counter
 
+import pytest
+
 from loraflow.v4_benchmarks import (
     ACTIONS,
     CATEGORIES,
@@ -103,3 +105,18 @@ def test_v4_instruction_enumerates_the_complete_output_schema() -> None:
     assert all(label in INSTRUCTION for label in allowed_labels)
     assert "exactly one line" in INSTRUCTION
     assert "Do not add explanations" in INSTRUCTION
+
+
+
+def test_v4_audit_rejects_category_label_that_conflicts_with_concept() -> None:
+    data = _make_data("A", (60, 24, 24), 71)
+    row = data["train"][0]
+    severity, _, action = row["output"].split()
+    actual_category = row["output"].split()[1].split("=", 1)[1]
+    wrong_category = next(
+        category for category in CATEGORIES if category != actual_category
+    )
+    row["output"] = f"{severity} cat={wrong_category} {action}"
+
+    with pytest.raises(ValueError, match="does not match concept category"):
+        audit("A", data)
