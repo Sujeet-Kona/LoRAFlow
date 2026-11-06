@@ -102,7 +102,7 @@ LoRAFlow/
 │   ├── export.py                adapter export, merged export with logit check
 │   ├── api.py                   FastAPI app, Prometheus metrics, model service
 │   └── cli.py                   data-check | train | evaluate | export | serve | mlflow-ui
-├── tests/                       120 tests, one file per module
+├── tests/                       145 test cases, one file per module
 ├── Dockerfile / docker-compose.yml
 └── pyproject.toml
 ```
@@ -183,7 +183,7 @@ command takes `--backend-store-uri`, not `--tracking-uri` — the CLI passes the
 
 ## Tests
 
-`pytest` runs 120 tests, one file per module. Coverage: JSONL validation with the offending line
+`pytest` runs 145 test cases across the module-focused test files. Coverage: JSONL validation with the offending line
 number, template rendering (empty input blocks, custom templates, whitespace-terminated templates,
 unknown placeholders), seeded split determinism and disjointness, deduplication, split statistics,
 device and dtype resolution including the unavailable-accelerator error, seeding, atomic JSON writes,
