@@ -161,7 +161,6 @@ def test_export_destination_cannot_overlap_source(tmp_path: Path) -> None:
     assert source.is_dir()
 
 
-
 def test_export_target_refuses_to_replace_existing_data_by_default(tmp_path: Path) -> None:
     target = tmp_path / "existing"
     target.mkdir()
@@ -243,9 +242,7 @@ def test_adapter_export_reload_loads_base_and_applies_adapter(tmp_path: Path, mo
     monkeypatch.setattr(
         export_module.AutoModelForCausalLM, "from_pretrained", lambda *_a, **_k: FakeModel()
     )
-    monkeypatch.setattr(
-        PeftModel, "from_pretrained", staticmethod(FakePeftModel.from_pretrained)
-    )
+    monkeypatch.setattr(PeftModel, "from_pretrained", staticmethod(FakePeftModel.from_pretrained))
     monkeypatch.setattr(safetensors_torch, "load_file", lambda *_a, **_k: {"lora": torch.ones(2)})
     monkeypatch.setattr(export_module, "_free_memory", lambda _device: None)
 
