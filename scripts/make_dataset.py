@@ -372,6 +372,20 @@ def main() -> None:
             "watch": "otherwise systemic=mild OR function=limited OR trajectory=worsening",
             "routine": "otherwise",
         },
+        "severity_cues_by_split": {
+            split: {
+                "systemic": {
+                    state: list(phrases) for state, phrases in SYSTEMIC_TEXT[split].items()
+                },
+                "function": {
+                    state: list(phrases) for state, phrases in FUNCTION_TEXT[split].items()
+                },
+                "trajectory": {
+                    state: list(phrases) for state, phrases in TRAJECTORY_TEXT[split].items()
+                },
+            }
+            for split in SYMPTOMS_BY_SPLIT
+        },
         "action_by_severity": ACTION_BY_SEVERITY,
         "synthetic_data_warning": "Engineering fixture only; not veterinary guidance.",
     }
