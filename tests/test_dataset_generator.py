@@ -65,7 +65,7 @@ def test_generator_rejects_non_positive_counts(count: int) -> None:
 
 def test_generator_rejects_counts_above_unique_capacity() -> None:
     with pytest.raises(ValueError, match="unique scenario combinations"):
-        make_records(200000, seed=1)
+        make_records(2000000, seed=1)
 
 
 def test_generator_rejects_unknown_split_family() -> None:
