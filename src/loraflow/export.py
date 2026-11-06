@@ -52,6 +52,21 @@ def _ensure_separate_export_path(source: Path, target: Path) -> None:
         )
 
 
+def _prepare_export_target(target: Path, *, overwrite: bool) -> None:
+    """Create a fresh export directory without deleting user data implicitly."""
+    if target.exists():
+        if not overwrite:
+            raise FileExistsError(
+                f"Export destination already exists: {target}. "
+                "Pass overwrite=True (CLI: --overwrite) to replace it."
+            )
+        if target.is_dir():
+            shutil.rmtree(target)
+        else:
+            target.unlink()
+    target.mkdir(parents=True, exist_ok=False)
+
+
 def _resolve_adapter_dir(config: AppConfig, adapter_dir: str | Path | None) -> Path:
     path = Path(adapter_dir) if adapter_dir else Path(config.training.output_dir) / ADAPTER_DIRNAME
     if not path.is_dir():
@@ -75,15 +90,14 @@ def export_adapter(
     adapter_dir: str | Path | None = None,
     output_dir: str | Path | None = None,
     tracker: Any = None,
+    overwrite: bool = False,
 ) -> dict[str, Any]:
     """Copy adapter weights plus tokenizer files into a clean export folder."""
 
     source = _resolve_adapter_dir(config, adapter_dir)
     target = Path(output_dir) if output_dir else Path(config.export.output_dir) / "adapter"
     _ensure_separate_export_path(source, target)
-    if target.exists() and target.is_dir():
-        shutil.rmtree(target)
-    target.mkdir(parents=True, exist_ok=True)
+    _prepare_export_target(target, overwrite=overwrite)
 
     copied = _copy_if_present(source, target, ADAPTER_FILES)
     copied += _copy_if_present(source, target, TOKENIZER_FILES)
@@ -117,6 +131,7 @@ def merge_and_export(
     output_dir: str | Path | None = None,
     sample_prompt: str | None = None,
     tracker: Any = None,
+    overwrite: bool = False,
 ) -> dict[str, Any]:
     """Fold the LoRA weights into the base model and save a standalone model.
 
@@ -135,9 +150,7 @@ def merge_and_export(
     source = _resolve_adapter_dir(config, adapter_dir)
     target = Path(output_dir) if output_dir else Path(config.export.merged_dir)
     _ensure_separate_export_path(source, target)
-    if target.exists() and target.is_dir():
-        shutil.rmtree(target)
-    target.mkdir(parents=True, exist_ok=True)
+    _prepare_export_target(target, overwrite=overwrite)
 
     base_model_name = _base_model_name(config, source)
     LOGGER.info("merging %s + %s -> %s", base_model_name, source, target)
@@ -218,19 +231,50 @@ def validate_export(config: AppConfig, path: str | Path, *, kind: str) -> dict[s
         raise ExportValidationError(f"Export contains zero-byte files: {empty}")
 
     tokenizer = AutoTokenizer.from_pretrained(str(target))
+    reload_verified = False
     if kind == "adapter":
+        from peft import PeftModel
         from safetensors.torch import load_file
 
         weights = load_file(str(target / "adapter_model.safetensors"))
         if not weights:
             raise ExportValidationError("Adapter safetensors file contains no tensors")
         parameter_count = sum(tensor.numel() for tensor in weights.values())
+
+        if config.export.verify_reload:
+            device = resolve_device(config.training.device)
+            dtype = resolve_dtype(device, config.training.dtype)
+            base_model_name = _base_model_name(config, target)
+            base_model = None
+            model = None
+            try:
+                base_model = AutoModelForCausalLM.from_pretrained(
+                    base_model_name, **{_dtype_kwarg_name(): dtype}
+                ).to(device)
+                model = PeftModel.from_pretrained(base_model, str(target))
+                model.eval()
+                probe = tokenizer(
+                    "LoRAFlow adapter reload validation.", return_tensors="pt"
+                )
+                probe = {key: value.to(device) for key, value in probe.items()}
+                with torch.inference_mode():
+                    model(**probe)
+                reload_verified = True
+            except Exception as exc:
+                raise ExportValidationError(
+                    f"Adapter export could not be loaded with base model "
+                    f"{base_model_name!r}: {exc}"
+                ) from exc
+            finally:
+                del model, base_model
+                _free_memory(device)
     else:
         model = AutoModelForCausalLM.from_pretrained(
             str(target), **{_dtype_kwarg_name(): torch.float32}
         )
         parameter_count = sum(p.numel() for p in model.parameters())
         del model
+        reload_verified = True
 
     return {
         "validated_at_utc": timestamp(),
@@ -243,6 +287,7 @@ def validate_export(config: AppConfig, path: str | Path, *, kind: str) -> dict[s
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": tokenizer.eos_token_id,
         "transformers_version": transformers.__version__,
+        "reload_verified": reload_verified,
     }
 
 
