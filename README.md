@@ -236,8 +236,8 @@ Verified on an Apple M4 MacBook Air with 16 GB RAM, no CUDA. torch 2.15.0 MPS wa
 (matmul and bf16 both work) but training runs in fp32 on the Mac path, because bf16/fp16 training
 coverage on MPS is not something to assume. The recorded 0.5B run completed in 413 s wall clock on a
 single device and its merged export is a 1,976,163,472-byte `model.safetensors`. **QLoRA is not
-claimed on macOS**: `bitsandbytes` has no macOS/arm64 build, so the `qlora` extra is marked
-`platform_system == 'Linux'` and 4-bit paths are only exercised there.
+implemented in this release**; the verified training path is standard LoRA. A separate CUDA-specific
+quantized loading, training, and export path would be required before claiming QLoRA support.
 
 ## Known limitations
 
