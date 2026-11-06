@@ -121,6 +121,7 @@ def _summary(audit: dict) -> dict:
                 ],
                 "memorize_exact_match": block["memorization_baseline"]["exact_match_1nn"],
                 "memorize_per_field": block["memorization_baseline"]["per_field_1nn"],
+                "majority_per_field": block["memorization_baseline"]["per_field_majority"],
             }
             for name, block in audit["held"].items()
         },
