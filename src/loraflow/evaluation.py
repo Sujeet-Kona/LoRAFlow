@@ -57,26 +57,6 @@ _COMPARED = (
 )
 
 
-def _build_scoring_row(
-    prompt_ids: list[int],
-    completion_ids: list[int],
-    *,
-    max_length: int,
-    source_line: int,
-) -> tuple[list[int], list[int]]:
-    """Build an untruncated scoring row or fail with the offending record."""
-
-    total = len(prompt_ids) + len(completion_ids)
-    if total > max_length:
-        raise ValueError(
-            f"Example on source line {source_line} needs {total} tokens "
-            f"(prompt={len(prompt_ids)}, completion={len(completion_ids)}), "
-            f"exceeding max_seq_length={max_length}; increase the limit or shorten the record."
-        )
-    input_ids = prompt_ids + completion_ids
-    return input_ids, _answer_labels(prompt_ids, completion_ids, input_ids)
-
-
 def _common_prefix_length(left: list[int], right: list[int]) -> int:
     """Return the shared token prefix length, matching TRL's completion-mask logic."""
 
@@ -105,23 +85,6 @@ def _build_prompt_completion_row(
     prefix_length = _common_prefix_length(prompt_ids, full_ids)
     labels = [IGNORE_INDEX] * prefix_length + full_ids[prefix_length:]
     return full_ids, labels
-
-
-def _answer_labels(
-    prompt_ids: list[int], completion_ids: list[int], input_ids: list[int]
-) -> list[int]:
-    """Mask every position except the answer span.
-
-    This matches the training objective, so the reported loss measures the
-    part of the sequence the adapter was actually optimised on.
-    """
-
-    labels = [IGNORE_INDEX] * len(input_ids)
-    for offset in range(len(completion_ids)):
-        index = len(prompt_ids) + offset
-        if index < len(input_ids):
-            labels[index] = input_ids[index]
-    return labels
 
 
 @torch.no_grad()
