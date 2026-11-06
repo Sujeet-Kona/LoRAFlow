@@ -94,10 +94,7 @@ def _validate_manifest(manifest_path: Path, splits: dict[str, list[dict]]) -> di
                         f"found {matched_states}"
                     )
                 observed_states[dimension] = matched_states[0]
-            if (
-                observed_states["systemic"] == "critical"
-                or observed_states["function"] == "failed"
-            ):
+            if observed_states["systemic"] == "critical" or observed_states["function"] == "failed":
                 expected_severity = "urgent"
             elif (
                 observed_states["systemic"] == "mild"
