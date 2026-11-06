@@ -77,6 +77,36 @@ def _build_scoring_row(
     return input_ids, _answer_labels(prompt_ids, completion_ids, input_ids)
 
 
+def _common_prefix_length(left: list[int], right: list[int]) -> int:
+    """Return the shared token prefix length, matching TRL's completion-mask logic."""
+
+    for index, (left_token, right_token) in enumerate(zip(left, right)):
+        if left_token != right_token:
+            return index
+    return min(len(left), len(right))
+
+
+def _build_prompt_completion_row(
+    prompt_ids: list[int],
+    full_ids: list[int],
+    *,
+    max_length: int,
+    source_line: int,
+) -> tuple[list[int], list[int]]:
+    """Mask the common prompt prefix in the already-tokenized full sequence."""
+
+    if len(full_ids) > max_length:
+        raise ValueError(
+            f"Example on source line {source_line} needs {len(full_ids)} tokens "
+            f"(prompt-prefix={_common_prefix_length(prompt_ids, full_ids)}, "
+            f"prompt-plus-completion={len(full_ids)}), exceeding "
+            f"max_seq_length={max_length}; increase the limit or shorten the record."
+        )
+    prefix_length = _common_prefix_length(prompt_ids, full_ids)
+    labels = [IGNORE_INDEX] * prefix_length + full_ids[prefix_length:]
+    return full_ids, labels
+
+
 def _completion_with_eos(completion_ids: list[int], eos_token_id: int | None) -> list[int]:
     """Match TRL SFT preprocessing by scoring the completion terminator too."""
 
@@ -110,7 +140,7 @@ def score_teacher_forcing(
     *,
     max_length: int,
     batch_size: int,
-    eos_token_id: int | None = None,
+    eos_token: str | None = None,
 ) -> dict[str, Any]:
     """Answer-token loss, perplexity and next-token accuracy under teacher forcing.
 
@@ -126,22 +156,29 @@ def score_teacher_forcing(
 
     for start in range(0, len(examples), batch_size):
         batch = examples[start : start + batch_size]
-        prompts = tokenizer([e.prompt for e in batch], add_special_tokens=False)["input_ids"]
-        completions = tokenizer([e.completion for e in batch], add_special_tokens=False)[
-            "input_ids"
-        ]
-
-        rows = []
-        for example, prompt, completion in zip(batch, prompts, completions, strict=True):
-            completion = _completion_with_eos(completion, eos_token_id)
-            rows.append(
-                _build_scoring_row(
-                    prompt,
-                    completion,
-                    max_length=max_length,
-                    source_line=example.source_line,
-                )
+        prompts = [example.prompt for example in batch]
+        full_texts = [
+            example.prompt
+            + example.completion
+            + (
+                eos_token
+                if eos_token is not None and not example.completion.endswith(eos_token)
+                else ""
             )
+            for example in batch
+        ]
+        prompt_ids = tokenizer(prompts, add_special_tokens=False)["input_ids"]
+        full_ids = tokenizer(full_texts, add_special_tokens=False)["input_ids"]
+
+        rows = [
+            _build_prompt_completion_row(
+                prompt,
+                full,
+                max_length=max_length,
+                source_line=example.source_line,
+            )
+            for example, prompt, full in zip(batch, prompt_ids, full_ids, strict=True)
+        ]
 
         width = max(len(input_ids) for input_ids, _ in rows)
         input_batch, mask_batch, label_batch = [], [], []
@@ -277,7 +314,7 @@ def _score_variant(
         held_out,
         max_length=config.data.max_seq_length,
         batch_size=config.evaluation.batch_size,
-        eos_token_id=tokenizer.eos_token_id,
+        eos_token=tokenizer.eos_token,
     )
     model.eval()
     model.config.use_cache = True
