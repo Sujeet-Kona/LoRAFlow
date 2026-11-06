@@ -6,7 +6,7 @@ An independently implemented, modular pipeline for preparing datasets, fine-tuni
 
 ## Historical v1 measurements — not generalization evidence
 
-**Dataset audit disclosure:** the original v1 synthetic corpus used label-correlated phrase templates. Its audit found 65–71% template overlap in held-out splits and an 82.5–85% 1-nearest-neighbour exact-match baseline. The model measurements below are retained as historical pipeline/reproducibility evidence only; they must not be presented as proof of task generalization. The v2 audit exposed a closed-vocabulary shortcut: the same symptom concepts appeared in every split. The v3 generator now holds out symptom concepts by category (three concepts per category for training, one for validation, and one for test), while severity is derived from independent systemic, functional, and trajectory attributes. The audit checks concept disjointness, category consistency, action-policy consistency, and nearest-neighbour plus per-field majority baselines. No v3 model-quality result is claimed until the generated corpus passes that audit and the baselines are inspected.
+**Dataset audit disclosure:** the original v1 synthetic corpus used label-correlated phrase templates. Its audit found 65–71% template overlap in held-out splits and an 82.5–85% 1-nearest-neighbour exact-match baseline. The model measurements below are retained as historical pipeline/reproducibility evidence only; they must not be presented as proof of task generalization. The v2 audit exposed a closed-vocabulary shortcut: the same symptom concepts appeared in every split. The v3 generator now holds out symptom concepts by category (three concepts per category for training, one for validation, and one for test), while severity is derived from independent systemic, functional, and trajectory attributes. The audit checks concept disjointness, category consistency, action-policy consistency, and nearest-neighbour plus per-field majority baselines. The v3 corpus has now been generated and passed the manifest-enforced local audit: 480/120/120 records, disjoint symptom concepts, no exact-note or template overlap, and all category/severity/action policy checks passed. The held-out non-neural baselines remain weak and mixed by field; this is a small synthetic concept-holdout benchmark, not evidence of broad language generalization. No v3 model-quality result is claimed until a fresh model run is evaluated against these baselines.
 
 The figures below were printed by real v1 runs on this machine and are retained as historical artifacts:
 `artifacts/{train-run,repro-run}/training_metadata.json`, `artifacts/{train-run,repro-run}/evaluation_report.json`,
@@ -266,8 +266,10 @@ quantized loading, training, and export path would be required before claiming Q
   real-world quality. No public benchmark is reproduced.
 - Training is single-process and single-device. `gradient_accumulation_steps` is the only
   parallelism knob; there is no FSDP, DeepSpeed, or multi-node support by design.
-- Evaluation metrics are teacher-forced loss/accuracy plus greedy exact-match. They miss partial
-  credit and semantic equivalence; there is no human evaluation and no calibration metric.
+- Evaluation reports teacher-forced answer-token loss/accuracy and generated exact/prefix match,
+  per-field macro-F1, per-class precision/recall, confusion matrices, and strict structured-output
+  validity. These remain automatic synthetic-task metrics: there is no human evaluation, semantic
+  equivalence assessment, or calibration metric.
 - The serving app holds one model per process with a bounded semaphore (`max_concurrent_requests`);
   it is a correctness-checked single-host server, not a throughput-tuned one. No auth, no rate
   limiting, no request queueing beyond the semaphore.
