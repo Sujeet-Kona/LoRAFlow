@@ -70,7 +70,6 @@ def verify_track(data_root: Path, track: str) -> dict[str, int]:
     return verified
 
 
-
 def main() -> None:
     for track in TRACKS:
         counts = verify_track(DATA_ROOT, track)
