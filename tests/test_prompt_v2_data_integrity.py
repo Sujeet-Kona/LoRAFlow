@@ -1,9 +1,18 @@
 import hashlib
+import importlib.util
 import json
+from pathlib import Path
 
 import pytest
 
-from scripts import verify_prompt_v2_data as validator
+
+VALIDATOR_PATH = Path(__file__).resolve().parents[1] / "scripts" / "verify_prompt_v2_data.py"
+VALIDATOR_SPEC = importlib.util.spec_from_file_location(
+    "verify_prompt_v2_data", VALIDATOR_PATH
+)
+assert VALIDATOR_SPEC is not None and VALIDATOR_SPEC.loader is not None
+validator = importlib.util.module_from_spec(VALIDATOR_SPEC)
+VALIDATOR_SPEC.loader.exec_module(validator)
 
 
 def _write_track(directory, *, record=None):
