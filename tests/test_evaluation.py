@@ -14,7 +14,13 @@ pytest.importorskip("peft")
 
 from loraflow.config import AppConfig, DataConfig, EvaluationConfig, TrainingConfig  # noqa: E402
 from loraflow.data import format_record  # noqa: E402
-from loraflow.evaluation import IGNORE_INDEX, _answer_labels, _note_text, evaluate_config  # noqa: E402
+from loraflow.evaluation import (
+    IGNORE_INDEX,
+    _answer_labels,
+    _build_scoring_row,
+    _note_text,
+    evaluate_config,
+)  # noqa: E402
 
 
 def make_config(tmp_path: Path) -> AppConfig:
@@ -28,6 +34,18 @@ def make_config(tmp_path: Path) -> AppConfig:
         training=TrainingConfig(base_model="fake/model", output_dir=tmp_path / "run"),
         evaluation=EvaluationConfig(output_file=tmp_path / "report.json"),
     )
+
+
+def test_scoring_row_rejects_truncated_completion() -> None:
+    with pytest.raises(ValueError, match="exceeding max_seq_length=5"):
+        _build_scoring_row([1, 2, 3], [4, 5, 6], max_length=5, source_line=17)
+
+
+def test_scoring_row_preserves_full_completion() -> None:
+    input_ids, labels = _build_scoring_row([1, 2], [3, 4], max_length=4, source_line=1)
+
+    assert input_ids == [1, 2, 3, 4]
+    assert labels == [IGNORE_INDEX, IGNORE_INDEX, 3, 4]
 
 
 def test_answer_labels_masks_everything_before_the_completion() -> None:
