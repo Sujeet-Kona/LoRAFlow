@@ -100,6 +100,20 @@ def test_manifest_audit_enforces_concept_and_label_contract(tmp_path: Path) -> N
             name: {category: list(phrases) for category, phrases in categories.items()}
             for name, categories in symptoms_by_split.items()
         },
+        "severity_cues_by_split": {
+            split: {
+                "systemic": {
+                    state: list(phrases) for state, phrases in _GENERATOR["SYSTEMIC_TEXT"][split].items()
+                },
+                "function": {
+                    state: list(phrases) for state, phrases in _GENERATOR["FUNCTION_TEXT"][split].items()
+                },
+                "trajectory": {
+                    state: list(phrases) for state, phrases in _GENERATOR["TRAJECTORY_TEXT"][split].items()
+                },
+            }
+            for split in symptoms_by_split
+        },
         "action_by_severity": _GENERATOR["ACTION_BY_SEVERITY"],
     }
     path = tmp_path / "manifest.json"
@@ -109,7 +123,9 @@ def test_manifest_audit_enforces_concept_and_label_contract(tmp_path: Path) -> N
 
     assert result["dataset_version"] == "v3"
     assert result["records_checked"] == {"train": 30, "validation": 12, "test": 12}
-    assert result["category_and_action_consistency"] == "passed"
+    assert result["category_consistency"] == "passed"
+    assert result["severity_policy_consistency"] == "passed"
+    assert result["action_by_severity_consistency"] == "passed"
     assert not any(result["cross_split_symptom_overlap"].values())
 
 
