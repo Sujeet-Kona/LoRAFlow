@@ -280,6 +280,16 @@ def lexical_baseline(
 
     field_totals: dict[str, int] = defaultdict(int)
     field_hits: dict[str, int] = defaultdict(int)
+    field_majority_hits: dict[str, int] = defaultdict(int)
+    train_field_counts: dict[str, Counter] = defaultdict(Counter)
+    for output in train_outputs:
+        for key, value in _parse_output_fields(output).items():
+            train_field_counts[key][value] += 1
+    field_majority = {
+        key: counts.most_common(1)[0][0]
+        for key, counts in train_field_counts.items()
+        if counts
+    }
     neighbour_exact = 0
     majority_exact = 0
     held_count = 0
@@ -309,6 +319,8 @@ def lexical_baseline(
             field_totals[key] += 1
             if prediction.get(key) == value:
                 field_hits[key] += 1
+            if field_majority.get(key) == value:
+                field_majority_hits[key] += 1
 
     return {
         "held_records": held_count,
@@ -319,6 +331,12 @@ def lexical_baseline(
             for key in sorted(field_totals)
             if field_totals[key]
         },
+        "per_field_majority": {
+            key: round(field_majority_hits[key] / field_totals[key], 4)
+            for key in sorted(field_totals)
+            if field_totals[key]
+        },
+        "majority_field_values": field_majority,
         "majority_output": majority,
     }
 
