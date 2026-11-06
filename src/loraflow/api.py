@@ -27,6 +27,16 @@ from loraflow.training import ADAPTER_DIRNAME, _dtype_kwarg_name, load_tokenizer
 
 LOGGER = logging.getLogger("loraflow.api")
 
+
+
+def _validate_prompt_token_length(token_count: int, max_length: int) -> None:
+    """Reject oversized prompts instead of silently dropping their leading context."""
+    if token_count > max_length:
+        raise ValueError(
+            f"Prompt has {token_count} tokens, above the configured max_seq_length "
+            f"of {max_length}; shorten the prompt or increase the limit."
+        )
+
 REQUESTS = Counter("loraflow_requests_total", "Inference requests", ["endpoint", "status"])
 LATENCY = Histogram(
     "loraflow_generation_seconds",
@@ -147,9 +157,10 @@ class ModelService:
                 text,
                 add_special_tokens=False,
                 return_tensors="pt",
-                truncation=True,
-                max_length=self.config.data.max_seq_length,
-            ).to(self.device)
+            )
+            prompt_length = int(encoded["input_ids"].size(1))
+            _validate_prompt_token_length(prompt_length, self.config.data.max_seq_length)
+            encoded = encoded.to(self.device)
             kwargs: dict[str, Any] = {
                 "max_new_tokens": new_tokens_limit,
                 "do_sample": do_sample,
@@ -161,7 +172,6 @@ class ModelService:
                 kwargs["top_p"] = top_p
             with torch.no_grad():
                 output_ids = self.model.generate(**encoded, **kwargs)
-            prompt_length = encoded["input_ids"].size(1)
             completion = self.tokenizer.decode(
                 output_ids[0][prompt_length:], skip_special_tokens=True
             )
