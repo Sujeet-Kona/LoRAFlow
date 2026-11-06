@@ -242,10 +242,16 @@ def test_count_adapter_parameters_sees_only_lora_tensors() -> None:
 
 
 class FakeTokenizer:
+    eos_token = "<eos>"
     eos_token_id = 99
 
     def __call__(self, texts, *, add_special_tokens=False):
-        return {"input_ids": [list(range(len(text.split()))) for text in texts]}
+        return {
+            "input_ids": [
+                list(range(len(text.replace(self.eos_token, " " + self.eos_token).split())))
+                for text in texts
+            ]
+        }
 
 
 def test_training_rejects_examples_that_would_be_truncated() -> None:
