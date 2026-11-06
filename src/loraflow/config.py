@@ -30,7 +30,11 @@ class DataConfig(BaseModel):
 
     # Used when validation_file is absent: the held-out slice is carved from
     # train_file with this fraction (or count) and the training seed.
-    validation_size: float = Field(default=0.1, gt=0.0, le=1.0)
+    validation_size: float = Field(
+        default=0.1,
+        gt=0.0,
+        description="Fraction in (0, 1) or an absolute example count when >= 1.",
+    )
     max_train_examples: PositiveInt | None = None
 
 
