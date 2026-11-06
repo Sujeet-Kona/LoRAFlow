@@ -189,9 +189,7 @@ def command_mlflow_ui(args: argparse.Namespace) -> int:
 
     config = load_config(args.config)
     uri = os.environ.get("LORAFLOW_MLFLOW_TRACKING_URI", config.tracking.tracking_uri)
-    artifact_root = os.environ.get(
-        "LORAFLOW_MLFLOW_ARTIFACTS_DIR", config.tracking.artifacts_dir
-    )
+    artifact_root = os.environ.get("LORAFLOW_MLFLOW_ARTIFACTS_DIR", config.tracking.artifacts_dir)
     print(f"tracking uri: {uri}")
     # MLflow's `ui` command takes the SQLAlchemy URI as --backend-store-uri;
     # --tracking-uri is not an option on it.
