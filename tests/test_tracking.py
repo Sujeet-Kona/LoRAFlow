@@ -9,9 +9,7 @@ def test_noop_tracker_accepts_export_reports() -> None:
     NoopTracker().log_export({"kind": "adapter", "path": "unused"})
 
 
-def test_mlflow_tracker_logs_export_metadata_and_manifest(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_mlflow_tracker_logs_export_metadata_and_manifest(tmp_path: Path, monkeypatch) -> None:
     export_dir = tmp_path / "export"
     export_dir.mkdir()
     manifest = export_dir / "export_manifest.json"
@@ -25,9 +23,7 @@ def test_mlflow_tracker_logs_export_metadata_and_manifest(
         "_log_flat",
         lambda payload, *, prefix="": calls.update(payload=payload, prefix=prefix),
     )
-    monkeypatch.setattr(
-        tracker, "log_artifact", lambda path: calls.update(manifest=Path(path))
-    )
+    monkeypatch.setattr(tracker, "log_artifact", lambda path: calls.update(manifest=Path(path)))
 
     report = {"kind": "adapter", "path": str(export_dir)}
     tracker.log_export(report)
