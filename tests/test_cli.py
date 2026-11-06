@@ -137,3 +137,23 @@ def test_mlflow_ui_uses_the_backend_store_option(tmp_path: Path, monkeypatch) ->
     assert "--tracking-uri" not in argv
     assert argv[argv.index("--backend-store-uri") + 1] == "sqlite:///other.db"
     assert argv[argv.index("--port") + 1] == "5050"
+
+
+def test_data_check_validates_and_reports_test_file(tmp_path: Path, capsys) -> None:
+    import yaml
+
+    path = write_config(tmp_path)
+    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    test_file = tmp_path / "test.jsonl"
+    test_file.write_text(
+        '{"instruction": "Label", "input": "held out", "output": "sev=watch"}\n',
+        encoding="utf-8",
+    )
+    raw["data"]["test_file"] = str(test_file)
+    path.write_text(yaml.safe_dump(raw), encoding="utf-8")
+
+    assert main(["data-check", "--config", str(path)]) == 0
+    payload = json.loads(capsys.readouterr().out)
+
+    assert payload["test"]["examples"] == 1
+    assert payload["test_source"] == "test_file"
