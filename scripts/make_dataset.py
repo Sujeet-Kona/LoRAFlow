@@ -153,6 +153,12 @@ def make_records(
     rng = random.Random(seed)
     records = []
     seen = seen_notes if seen_notes is not None else set()
+    available_unique_notes = maximum_unique_notes - len(seen)
+    if count > available_unique_notes:
+        raise ValueError(
+            f"requested {count} records, but only {available_unique_notes} "
+            "unique note combinations remain in the shared set"
+        )
     while len(records) < count:
         note, category, severity = labelled_note(rng)
         if note in seen:
