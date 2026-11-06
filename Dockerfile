@@ -11,7 +11,7 @@ WORKDIR /app
 # CPU wheels keep the image small; swap the index URL for the CUDA build only
 # on a GPU host.
 RUN pip install --upgrade pip \
- && pip install torch --index-url https://download.pytorch.org/whl/cpu
+ && pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple "torch==2.15.0+cpu"
 
 COPY pyproject.toml README.md ./
 COPY src ./src
