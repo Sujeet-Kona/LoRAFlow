@@ -112,9 +112,7 @@ def test_v4_audit_rejects_category_label_that_conflicts_with_concept() -> None:
     row = data["train"][0]
     severity, _, action = row["output"].split()
     actual_category = row["output"].split()[1].split("=", 1)[1]
-    wrong_category = next(
-        category for category in CATEGORIES if category != actual_category
-    )
+    wrong_category = next(category for category in CATEGORIES if category != actual_category)
     row["output"] = f"{severity} cat={wrong_category} {action}"
 
     with pytest.raises(ValueError, match="does not match concept category"):
