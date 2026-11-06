@@ -28,48 +28,19 @@ ACTION_BY_SEVERITY = {
 }
 
 SYMPTOMS: dict[str, tuple[str, ...]] = {
-    "mobility": (
-        "favors one hind leg while walking",
-        "hesitates before putting weight on a front hoof",
-        "rises slowly after resting",
-        "takes shorter steps than the other animals",
-        "keeps stumbling on level ground",
-    ),
-    "feeding": (
-        "leaves most of the feed in the trough",
-        "takes only a few mouthfuls at feeding time",
-        "drinks noticeably less water than usual",
-        "chews slowly and drops some of the feed",
-        "has gradually lost body condition",
-    ),
-    "respiratory": (
-        "coughs repeatedly during the observation",
-        "has discharge around the nostrils",
-        "breathes faster than expected while resting",
-        "makes an unusual sound while breathing",
-        "shows increased effort when breathing",
-    ),
-    "skin": (
-        "has an irritated patch beneath the coat",
-        "keeps rubbing the same area against a post",
-        "has a small open area on the shoulder",
-        "shows hair loss along one side",
-        "has swelling around a recent skin wound",
-    ),
-    "behaviour": (
-        "stays away from the rest of the group",
-        "does not respond to its usual call",
-        "repeatedly presses its head against a surface",
-        "acts unusually restless during handling",
-        "shows a marked change in its normal routine",
-    ),
-    "unknown": (
-        "appears different from its usual self",
-        "has an observation that cannot be localised",
-        "was reported as unwell without further detail",
-        "shows a change that the observer cannot describe",
-        "has no clear symptom recorded in the note",
-    ),
+    "mobility": ("uneven weight-bearing while walking", "reluctance to place weight on a front hoof", "slow rising after rest", "shortened steps compared with nearby animals", "repeated stumbling on level ground"),
+    "feeding": ("reduced feed intake", "very small amounts of feed consumed at a meal", "lower water consumption than usual", "difficulty chewing and retaining feed", "gradual loss of body condition"),
+    "respiratory": ("repeated coughing", "nasal discharge", "rapid breathing while resting", "unusual sounds during breathing", "increased effort during breathing"),
+    "skin": ("an irritated patch beneath the coat", "repeated rubbing of the same area against a post", "a small open area on the shoulder", "hair loss along one side", "swelling around a recent skin wound"),
+    "behaviour": ("withdrawal from the rest of the group", "failure to respond to a familiar call", "repeated head pressing against a surface", "unusual restlessness during handling", "a marked change in the usual routine"),
+    "unknown": ("an unexplained change from the usual condition", "an observation that cannot be localised", "an unspecified report of illness without further detail", "a change that the observer cannot describe", "an observation with no clear symptom recorded"),
+}
+
+# Hold out symptom concepts, not just alternate sentence frames.
+SYMPTOMS_BY_SPLIT: dict[str, dict[str, tuple[str, ...]]] = {
+    "train": {category: phrases[:3] for category, phrases in SYMPTOMS.items()},
+    "validation": {category: (phrases[3],) for category, phrases in SYMPTOMS.items()},
+    "test": {category: (phrases[4],) for category, phrases in SYMPTOMS.items()},
 }
 
 SYSTEMIC_STATES = ("normal", "mild", "critical")
