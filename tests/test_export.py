@@ -122,3 +122,26 @@ def test_save_dtype_rejects_unknown_name() -> None:
 
     with pytest.raises(KeyError):
         _save_dtype("int4")
+
+def test_export_free_memory_does_not_call_unavailable_mps(monkeypatch) -> None:
+    torch = pytest.importorskip("torch")
+    from loraflow.export import _free_memory
+
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
+
+    def unexpected_empty_cache() -> None:
+        pytest.fail("MPS cache cleanup must not run when MPS is unavailable")
+
+    monkeypatch.setattr(torch.mps, "empty_cache", unexpected_empty_cache)
+    _free_memory("mps")
+
+
+def test_export_free_memory_clears_available_mps(monkeypatch) -> None:
+    torch = pytest.importorskip("torch")
+    from loraflow.export import _free_memory
+
+    calls = []
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: True)
+    monkeypatch.setattr(torch.mps, "empty_cache", lambda: calls.append(True))
+    _free_memory("mps")
+    assert calls == [True]
