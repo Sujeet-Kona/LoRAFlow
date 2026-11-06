@@ -1,6 +1,6 @@
 import hashlib
 import json
-import runpy
+from runpy import run_path
 from pathlib import Path
 
 import pytest
@@ -9,7 +9,7 @@ import pytest
 VALIDATOR_PATH = (
     Path(__file__).resolve().parents[1] / "scripts" / "verify_prompt_v2_data.py"
 )
-validator = runpy.run_path(str(VALIDATOR_PATH))
+validator = run_path(str(VALIDATOR_PATH))
 
 
 def _write_track(directory, *, record=None):
