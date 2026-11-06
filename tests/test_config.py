@@ -84,7 +84,6 @@ def test_config_rejects_empty_lora_target_modules() -> None:
         AppConfig.model_validate({**valid_config(), "lora": {"target_modules": []}})
 
 
-
 def test_training_config_rejects_misaligned_checkpoint_intervals() -> None:
     raw = valid_config()
     raw["training"].update({"save_steps": 10, "eval_steps": 3})
