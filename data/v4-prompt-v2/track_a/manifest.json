@@ -1,0 +1,228 @@
+{
+  "action_by_severity": {
+    "routine": "log_only",
+    "urgent": "flag_vet_now",
+    "watch": "recheck_12h"
+  },
+  "audit": {
+    "concepts": {
+      "test": [
+        "breathing pauses",
+        "difficulty turning",
+        "frequent dropping of feed",
+        "localized redness",
+        "observation lacks a clear description",
+        "reduced interaction",
+        "reduced walking distance",
+        "repeated scratching",
+        "repetitive pacing",
+        "shallow breaths",
+        "uncertain reported change",
+        "unusual feeding pauses"
+      ],
+      "train": [
+        "change in usual routine",
+        "change observer cannot describe",
+        "difficulty chewing",
+        "failure to respond to a familiar call",
+        "gradual body condition loss",
+        "hair loss along one side",
+        "illness report without detail",
+        "increased breathing effort",
+        "irritated patch beneath the coat",
+        "lower water consumption",
+        "nasal discharge",
+        "no clear symptom recorded",
+        "noisy breathing",
+        "observation cannot be localised",
+        "rapid breathing at rest",
+        "reduced feed intake",
+        "reluctance to use a front leg",
+        "repeated coughing",
+        "repeated head pressing",
+        "repeated rubbing against a post",
+        "repeated stumbling",
+        "restlessness during handling",
+        "shortened steps",
+        "slow eating",
+        "slow rising after rest",
+        "small open skin area",
+        "swelling near a wound",
+        "uneven weight bearing",
+        "unexplained change in condition",
+        "withdrawal from the group"
+      ],
+      "validation": [
+        "general concern without specifics",
+        "persistent sneezing",
+        "refusal of usual feed",
+        "scaly skin region",
+        "stiffness after standing",
+        "unusual isolation"
+      ]
+    },
+    "counts": {
+      "test": 150,
+      "train": 600,
+      "validation": 120
+    },
+    "policy_checks": "passed",
+    "severity_counts": {
+      "test": {
+        "routine": 11,
+        "urgent": 83,
+        "watch": 56
+      },
+      "train": {
+        "routine": 45,
+        "urgent": 333,
+        "watch": 222
+      },
+      "validation": {
+        "routine": 9,
+        "urgent": 67,
+        "watch": 44
+      }
+    },
+    "severity_cue_sets": {
+      "test": [
+        "a basic usual activity cannot be completed",
+        "a slight overall change is present",
+        "general checks remain within the usual range",
+        "some usual activity is difficult",
+        "the animal is markedly dull with a very high temperature",
+        "the change has become more pronounced",
+        "the change has been easing",
+        "the observation has remained much the same"
+      ],
+      "train": [
+        "a basic usual activity cannot be completed",
+        "a slight overall change is present",
+        "general checks remain within the usual range",
+        "some usual activity is difficult",
+        "the animal is markedly dull with a very high temperature",
+        "the change has become more pronounced",
+        "the change has been easing",
+        "the observation has remained much the same"
+      ],
+      "validation": [
+        "a basic usual activity cannot be completed",
+        "a slight overall change is present",
+        "general checks remain within the usual range",
+        "some usual activity is difficult",
+        "the animal is markedly dull with a very high temperature",
+        "the change has become more pronounced",
+        "the change has been easing",
+        "the observation has remained much the same"
+      ]
+    },
+    "severity_targets": {
+      "test": {
+        "routine": 11,
+        "urgent": 83,
+        "watch": 56
+      },
+      "train": {
+        "routine": 45,
+        "urgent": 333,
+        "watch": 222
+      },
+      "validation": {
+        "routine": 9,
+        "urgent": 67,
+        "watch": 44
+      }
+    }
+  },
+  "concept_inventory": {
+    "behaviour": [
+      "withdrawal from the group",
+      "failure to respond to a familiar call",
+      "repeated head pressing",
+      "restlessness during handling",
+      "change in usual routine",
+      "unusual isolation",
+      "reduced interaction",
+      "repetitive pacing"
+    ],
+    "feeding": [
+      "reduced feed intake",
+      "lower water consumption",
+      "difficulty chewing",
+      "slow eating",
+      "gradual body condition loss",
+      "refusal of usual feed",
+      "frequent dropping of feed",
+      "unusual feeding pauses"
+    ],
+    "mobility": [
+      "uneven weight bearing",
+      "reluctance to use a front leg",
+      "slow rising after rest",
+      "shortened steps",
+      "repeated stumbling",
+      "stiffness after standing",
+      "difficulty turning",
+      "reduced walking distance"
+    ],
+    "respiratory": [
+      "repeated coughing",
+      "nasal discharge",
+      "rapid breathing at rest",
+      "noisy breathing",
+      "increased breathing effort",
+      "persistent sneezing",
+      "shallow breaths",
+      "breathing pauses"
+    ],
+    "skin": [
+      "irritated patch beneath the coat",
+      "repeated rubbing against a post",
+      "small open skin area",
+      "hair loss along one side",
+      "swelling near a wound",
+      "scaly skin region",
+      "localized redness",
+      "repeated scratching"
+    ],
+    "unknown": [
+      "unexplained change in condition",
+      "observation cannot be localised",
+      "illness report without detail",
+      "change observer cannot describe",
+      "no clear symptom recorded",
+      "general concern without specifics",
+      "uncertain reported change",
+      "observation lacks a clear description"
+    ]
+  },
+  "concept_policy": "B shares one category-balanced concept inventory across splits; A/C hold out concepts (5 train, 1 validation, 2 test concepts per category).",
+  "counts": {
+    "test": 150,
+    "train": 600,
+    "validation": 120
+  },
+  "dataset_version": "v4",
+  "seed": 41,
+  "severity_cue_policy": "A shares severity wording; B/C use split-specific severity wording.",
+  "severity_policy": {
+    "routine": "otherwise",
+    "urgent": "systemic=critical OR function=failed",
+    "watch": "otherwise systemic=mild OR function=limited OR trajectory=worsening"
+  },
+  "severity_sampling_policy": {
+    "description": "Exact stratified class quotas; unique scenario combinations sampled without replacement after ensuring every allocated concept appears.",
+    "remaining_class": "urgent",
+    "target_ratios": {
+      "routine": 0.075,
+      "watch": 0.37
+    }
+  },
+  "sha256": {
+    "test": "2e6c543afe7fcb03ee6a469c0b6772607780e7b8f4c5b1ccc9c54000f1bfc7dd",
+    "train": "61adc992383e4123eca0bc3c7ce746efffc4893c1f6dc761317684641f02c07c",
+    "validation": "3eb69033553f311a980f2bac956bfef608f41377da5d599a8930d8c45596b5c6"
+  },
+  "synthetic_data_warning": "Engineering benchmark only; not veterinary guidance or clinical decision support.",
+  "track": "A"
+}

@@ -356,6 +356,8 @@ def run_training(
     if tracker is not None:
         try:
             tracker.start(run_name=sft_config.run_name)
+            metadata["mlflow_run_id"] = tracker.run_id
+            write_json(run_dir / METADATA_FILENAME, metadata)
             tracker.log_run(config, extra={"trainable_parameters": trainable})
             tracker.log_training(metadata)
             tracker.log_adapter(adapter_dir)

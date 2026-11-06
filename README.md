@@ -37,6 +37,45 @@ The adapter and merged exports were then re-run from that second adapter into
 Serving and the MLflow UI were checked against the current tree too. No external benchmark is
 reproduced anywhere in this table.
 
+## V4 controlled benchmark (current experiment)
+
+V4 is a separate, controlled synthetic benchmark under `data/v4/`; it does not overwrite the historical v1-v3 corpora. It contains three tracks, each with 600 training, 120 validation, and 150 held-out test examples:
+
+| Track | Intended distribution shift |
+| --- | --- |
+| A | Unseen symptom concepts; shared severity wording |
+| B | Shared symptom concepts; unseen severity wording |
+| C | Both symptom concepts and severity wording are held out |
+
+The generator uses deterministic seeds, eight concepts per category, exact severity quotas, split manifests and SHA-256 hashes. It removes random animal IDs and runs allocation, uniqueness, token-length and policy checks before writing. The TF-IDF + LinearSVC baseline is fit on training text only; it does not fit on test examples. Its action field is derived from predicted severity using the benchmark's deterministic policy, so action is not an independent classification result.
+
+The experiment uses `Qwen/Qwen2.5-0.5B` with standard LoRA (rank 8, alpha 16, dropout 0.05, `q_proj` and `v_proj`). Each adapter has 540,672 trainable parameters (about 0.109% of 494,573,440 base parameters). Three training and evaluation runs completed locally; all three adapters were exported and reload-verified. The Track A adapter was also loaded into the FastAPI service on Apple MPS and exercised through `/health` and `/generate`. This does not mean all three adapters have been live-served; the live API check was performed with Track A.
+
+### Prompt-v2 held-out results
+
+The prompt-v2 rerun has now completed for all three tracks. Each result below is measured on the same track's 150-example held-out test split. The primary comparison is against the train-only TF-IDF + LinearSVC baseline; the unadapted Qwen baseline emits prose that often violates the required one-line schema, so its zero exact-match score is **not** evidence that the adapter beats a capable base-model classifier.
+
+| Track | LoRA exact match | TF-IDF + LinearSVC exact match | Strict structured-output validity | Category macro-F1 |
+| --- | ---: | ---: | ---: | ---: |
+| A | 68.00% | 30.00% | 100.00% | 0.7004 |
+| B | **77.33%** | 56.00% | 98.67% | **0.8606** |
+| C | 37.33% | 16.67% | 100.00% | 0.4345 |
+
+Track B is the strongest prompt-v2 result. Track C shows a substantial category-generalization weakness and should not be presented as a strong classifier. Track A's nearest-neighbour audit found 11 of 60 sampled test notes (18.33%) with Jaccard similarity of at least 0.9 to a training note; exact duplicates were zero, but this weakens the claim that Track A is a clean unseen-concept test. Tracks B and C had zero such cases in the 60-note audit sample. Full field metrics, per-class results, split hashes, MLflow run IDs, and limitations are documented in [the prompt-v2 results report](docs/prompt-v2-results.md).
+
+These are controlled synthetic-task measurements, not evidence of veterinary utility, clinical safety, or broad natural-language generalization. The unadapted base-model exact-match score is format-confounded and must not be used as the headline improvement claim. Action is deterministically derived from severity and is not an independent prediction task.
+
+The benchmark is an engineering fixture for testing controlled distribution shifts and the fine-tuning/evaluation pipeline. It is not veterinary guidance or a clinical decision system.
+
+The exact Prompt-v2 JSONL inputs, manifests, and configs are committed. To reproduce the three runs from a **fresh checkout** (requires the `train`, `serve`, and `dev` extras plus a Hugging Face model download), run:
+
+```bash
+pip install -e ".[train,serve,dev]"
+bash scripts/run_prompt_v2_experiments.sh
+```
+
+The runner verifies split hashes/counts before training, then evaluates, exports/reload-validates, and smoke-tests all three adapters. It refuses to overwrite existing run/export directories. See [the detailed report](docs/prompt-v2-results.md) for protocol, caveats, and measured results.
+
 ## Quickstart
 
 ```bash
@@ -180,6 +219,18 @@ exact prompt the adapter was trained on (`format_prompt: false` sends raw text i
 carry both `completion` and `completion_line`. Send the training instruction verbatim: an off-distribution
 instruction ("Triage this calf observation note.") was measured to return chat prose instead of the
 `key=value` line, which is the adapter doing exactly what it was trained to do and nothing more.
+
+To smoke-test all three exported Prompt-v2 adapters sequentially (without Docker), run this after the
+local Prompt-v2 artifacts are present:
+
+```bash
+bash scripts/smoke_prompt_v2_serving.sh
+```
+
+The script checks `/health`, confirms `adapter_applied: true`, and rejects a generated response that
+does not match the exact benchmark label schema. The Prompt-v2 smoke script passed locally for all three exported adapters: each health check
+returned `ok`, each service reported `adapter_applied: true`, and each generated a schema-valid
+completion. This verifies the tested local serving path; it is not a production deployment claim.
 
 Out-of-range bodies become 422 before any tensor is allocated (verified: empty `prompt`), an over-long
 prompt becomes 400 with the limit named (verified: 5,046 characters against `max_input_chars: 4000`),
