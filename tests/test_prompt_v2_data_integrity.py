@@ -53,9 +53,7 @@ def test_verify_track_rejects_modified_split_hash(tmp_path, monkeypatch):
         validator.verify_track("a")
 
 
-def test_verify_track_rejects_invalid_record_even_with_matching_hash(
-    tmp_path, monkeypatch
-):
+def test_verify_track_rejects_invalid_record_even_with_matching_hash(tmp_path, monkeypatch):
     directory = tmp_path / "track_a"
     _write_track(directory)
     invalid = b'{"instruction":"Classify","input":"note"}\\n'
