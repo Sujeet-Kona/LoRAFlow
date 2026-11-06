@@ -38,6 +38,20 @@ class ExportValidationError(Exception):
     """Raised when an exported directory cannot be reloaded as expected."""
 
 
+def _ensure_separate_export_path(source: Path, target: Path) -> None:
+    """Prevent an export from deleting or overwriting its source adapter."""
+    source_resolved = source.resolve()
+    target_resolved = target.resolve()
+    if (
+        source_resolved == target_resolved
+        or source_resolved in target_resolved.parents
+        or target_resolved in source_resolved.parents
+    ):
+        raise ValueError(
+            f"Export destination {target_resolved} overlaps source adapter {source_resolved}"
+        )
+
+
 def _resolve_adapter_dir(config: AppConfig, adapter_dir: str | Path | None) -> Path:
     path = Path(adapter_dir) if adapter_dir else Path(config.training.output_dir) / ADAPTER_DIRNAME
     if not path.is_dir():
@@ -66,6 +80,7 @@ def export_adapter(
 
     source = _resolve_adapter_dir(config, adapter_dir)
     target = Path(output_dir) if output_dir else Path(config.export.output_dir) / "adapter"
+    _ensure_separate_export_path(source, target)
     if target.exists() and target.is_dir():
         shutil.rmtree(target)
     target.mkdir(parents=True, exist_ok=True)
@@ -116,6 +131,7 @@ def merge_and_export(
 
     source = _resolve_adapter_dir(config, adapter_dir)
     target = Path(output_dir) if output_dir else Path(config.export.merged_dir)
+    _ensure_separate_export_path(source, target)
     if target.exists() and target.is_dir():
         shutil.rmtree(target)
     target.mkdir(parents=True, exist_ok=True)
