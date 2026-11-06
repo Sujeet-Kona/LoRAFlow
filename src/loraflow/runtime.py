@@ -66,15 +66,11 @@ def resolve_dtype(device: str, requested: str = "auto") -> torch.dtype:
 
 
 def set_global_seed(seed: int, device: str = "cpu") -> None:
-    """Seed Python, NumPy and the active torch device."""
+    """Seed Python, NumPy when installed, and the active torch device."""
 
     os.environ["PYTHONHASHSEED"] = str(seed)
     random.seed(seed)
     try:
-            except ImportError:
-        pass
-    else:
-        try:
         import numpy as np
     except ImportError:
         pass
