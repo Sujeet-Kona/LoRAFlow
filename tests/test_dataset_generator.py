@@ -12,9 +12,7 @@ _GENERATOR = runpy.run_path(
 make_records = _GENERATOR["make_records"]
 derive_severity = _GENERATOR["derive_severity"]
 symptoms_by_split = _GENERATOR["SYMPTOMS_BY_SPLIT"]
-AUDITOR = runpy.run_path(
-    str(Path(__file__).resolve().parents[1] / "scripts" / "audit_dataset.py")
-)
+AUDITOR = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts" / "audit_dataset.py"))
 validate_manifest = AUDITOR["_validate_manifest"]
 
 
