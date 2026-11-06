@@ -14,7 +14,7 @@ pytest.importorskip("peft")
 
 from loraflow.config import AppConfig, DataConfig, EvaluationConfig, TrainingConfig  # noqa: E402
 from loraflow.data import format_record  # noqa: E402
-from loraflow.evaluation import (
+from loraflow.evaluation import (  # noqa: E402
     IGNORE_INDEX,
     _answer_labels,
     _build_scoring_row,
