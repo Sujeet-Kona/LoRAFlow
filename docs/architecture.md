@@ -19,7 +19,7 @@ flowchart TD
     EVAL --> REPORT["Evaluation report"]
     PEFT --> EXPORT["Adapter export"]
     EXPORT --> RELOAD["Reload verification"]
-    RELOAD --> ARTIFACT["Versioned adapter artifact"]
+    RELOAD --> ARTIFACT["Verified adapter export"]
     ARTIFACT --> API["FastAPI inference service"]
     API --> CLIENT["HTTP client"]
     TRAIN --> TRACK["MLflow experiment tracking"]
