@@ -28,12 +28,48 @@ ACTION_BY_SEVERITY = {
 }
 
 SYMPTOMS: dict[str, tuple[str, ...]] = {
-    "mobility": ("uneven weight-bearing while walking", "reluctance to place weight on a front hoof", "slow rising after rest", "shortened steps compared with nearby animals", "repeated stumbling on level ground"),
-    "feeding": ("reduced feed intake", "very small amounts of feed consumed at a meal", "lower water consumption than usual", "difficulty chewing and retaining feed", "gradual loss of body condition"),
-    "respiratory": ("repeated coughing", "nasal discharge", "rapid breathing while resting", "unusual sounds during breathing", "increased effort during breathing"),
-    "skin": ("an irritated patch beneath the coat", "repeated rubbing of the same area against a post", "a small open area on the shoulder", "hair loss along one side", "swelling around a recent skin wound"),
-    "behaviour": ("withdrawal from the rest of the group", "failure to respond to a familiar call", "repeated head pressing against a surface", "unusual restlessness during handling", "a marked change in the usual routine"),
-    "unknown": ("an unexplained change from the usual condition", "an observation that cannot be localised", "an unspecified report of illness without further detail", "a change that the observer cannot describe", "an observation with no clear symptom recorded"),
+    "mobility": (
+        "uneven weight-bearing while walking",
+        "reluctance to place weight on a front hoof",
+        "slow rising after rest",
+        "shortened steps compared with nearby animals",
+        "repeated stumbling on level ground",
+    ),
+    "feeding": (
+        "reduced feed intake",
+        "very small amounts of feed consumed at a meal",
+        "lower water consumption than usual",
+        "difficulty chewing and retaining feed",
+        "gradual loss of body condition",
+    ),
+    "respiratory": (
+        "repeated coughing",
+        "nasal discharge",
+        "rapid breathing while resting",
+        "unusual sounds during breathing",
+        "increased effort during breathing",
+    ),
+    "skin": (
+        "an irritated patch beneath the coat",
+        "repeated rubbing of the same area against a post",
+        "a small open area on the shoulder",
+        "hair loss along one side",
+        "swelling around a recent skin wound",
+    ),
+    "behaviour": (
+        "withdrawal from the rest of the group",
+        "failure to respond to a familiar call",
+        "repeated head pressing against a surface",
+        "unusual restlessness during handling",
+        "a marked change in the usual routine",
+    ),
+    "unknown": (
+        "an unexplained change from the usual condition",
+        "an observation that cannot be localised",
+        "an unspecified report of illness without further detail",
+        "a change that the observer cannot describe",
+        "an observation with no clear symptom recorded",
+    ),
 }
 
 # Hold out symptom concepts, not just alternate sentence frames.
