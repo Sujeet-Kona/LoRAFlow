@@ -25,7 +25,10 @@ from loraflow.data import render_prompt
 from loraflow.runtime import cpu_threads, resolve_device, resolve_dtype, set_global_seed
 from loraflow.training import ADAPTER_DIRNAME, _dtype_kwarg_name, load_tokenizer
 
-LOGGER = logging.getLogger("loraflow.api")def _validate_prompt_token_length(token_count: int, max_length: int) -> None:
+LOGGER = logging.getLogger("loraflow.api")
+
+
+def _validate_prompt_token_length(token_count: int, max_length: int) -> None:
     """Reject oversized prompts instead of silently dropping their leading context."""
     if token_count > max_length:
         raise ValueError(
