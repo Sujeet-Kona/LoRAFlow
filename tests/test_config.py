@@ -82,3 +82,22 @@ def test_config_rejects_invalid_serving_port(port: int) -> None:
 def test_config_rejects_empty_lora_target_modules() -> None:
     with pytest.raises(ValidationError):
         AppConfig.model_validate({**valid_config(), "lora": {"target_modules": []}})
+
+
+
+def test_training_config_rejects_misaligned_checkpoint_intervals() -> None:
+    raw = valid_config()
+    raw["training"].update({"save_steps": 10, "eval_steps": 3})
+
+    with pytest.raises(ValidationError, match="save_steps must be a multiple"):
+        AppConfig.model_validate(raw)
+
+
+def test_training_config_validates_cli_style_assignments() -> None:
+    config = AppConfig.model_validate(valid_config())
+
+    with pytest.raises(ValidationError):
+        config.training.num_train_epochs = 0
+
+    with pytest.raises(ValidationError):
+        config.training.max_steps = -2
