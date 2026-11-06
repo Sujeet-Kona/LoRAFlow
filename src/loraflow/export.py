@@ -253,17 +253,14 @@ def validate_export(config: AppConfig, path: str | Path, *, kind: str) -> dict[s
                 ).to(device)
                 model = PeftModel.from_pretrained(base_model, str(target))
                 model.eval()
-                probe = tokenizer(
-                    "LoRAFlow adapter reload validation.", return_tensors="pt"
-                )
+                probe = tokenizer("LoRAFlow adapter reload validation.", return_tensors="pt")
                 probe = {key: value.to(device) for key, value in probe.items()}
                 with torch.inference_mode():
                     model(**probe)
                 reload_verified = True
             except Exception as exc:
                 raise ExportValidationError(
-                    f"Adapter export could not be loaded with base model "
-                    f"{base_model_name!r}: {exc}"
+                    f"Adapter export could not be loaded with base model {base_model_name!r}: {exc}"
                 ) from exc
             finally:
                 del model, base_model
