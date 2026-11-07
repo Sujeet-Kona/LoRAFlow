@@ -162,7 +162,3 @@ Python · PyTorch · Hugging Face Transformers · TRL · PEFT (LoRA) · FastAPI 
 - Lower-precision merged exports use a wider comparison tolerance; equivalence is not established to the same standard as fp32/bf16.
 - Docker image build and live Compose execution remain unverified.
 - QLoRA is not implemented.
-
-## Reference
-
-The high-level workflow was informed by [Rishi625/LLM-Finetune-Pipeline](https://github.com/Rishi625/LLM-Finetune-Pipeline). LoRAFlow is a separate implementation; no source files are copied from that repository.
