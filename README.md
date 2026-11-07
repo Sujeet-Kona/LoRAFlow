@@ -29,6 +29,8 @@ Training, evaluation, and export are offline workflows. The serving process load
 
 Prompt-v2 contains three controlled synthetic tracks. Each track has 600 training, 120 validation, and 150 held-out test examples. The primary baseline is train-only TF-IDF + LinearSVC. The unadapted Qwen model often emits prose that violates the required one-line output schema; its zero exact-match result is format-confounded and is not evidence that the adapter beats a capable base-model classifier.
 
+The tracks test different controlled shifts: Track A holds out symptom concepts while keeping severity wording shared; Track B keeps symptom concepts shared while holding out severity wording; Track C holds out both. The runs use Qwen/Qwen2.5-0.5B with standard LoRA (rank 8, alpha 16, dropout 0.05, q_proj and v_proj). Each adapter has 540,672 trainable parameters (about 0.109% of the 494,573,440 base-model parameters). The recorded Prompt-v2 configuration uses seed 42, three epochs, 114 optimizer steps, greedy decoding, and a 24-token generation limit.
+
 | Track | LoRA exact match | TF-IDF + LinearSVC exact match | Structured-output validity | Category macro-F1 |
 |---|---:|---:|---:|---:|
 | A | 68.00% | 30.00% | 100.00% | 0.7004 |
